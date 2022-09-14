@@ -1,0 +1,42 @@
+Ideas for what to do with Barren Plateaus:
+
+A significant issue that came up in a meeting with Tal and Dekel is that convergence time is not indicative of barren plateaus.
+For example, an experiment can terminate very quickly but to a local minimum or out of a tolerance condition, and we would have no idea.
+(tolerance condition, a.k.a. tol, is an optimization condition that requires a minimum change in the cost function in each optimization step.)
+
+Dekel started bridging this gap by checking the value to which each experiment converges.
+These are several ideas for other kinds of data to generate from optimization experiments:
+
+For VQE, calculate the energies of excited states.
+Personally, I suspect that some experiments converge to energies that correspond to excited states.
+It might be that these excited states cause local minima in the parameter landscape.
+Let us call these energies "likely pitfalls."
+
+For every optimization experiment, calculate:
+*	The converged value, and the distance from the correct solution.
+
+Aggregated data:
+*	A "heat-map" (or histogram) of all optimization terminations (that is, what is the final energy for every optimization experiment).
+	To said heat-map, add:
+	-	A line representing the true solution.
+	-	Lines representing "likely pitfall" energies.
+
+For *some* optimization experiments:
+*	Make a convergence graph (energy as a function of the optimization step) with the true result and likely pitfalls marked on the graph.
+*	Make a graph showing the sum and maximum of all partial derivatives during each optimization step.
+
+How to pick for which optimization experiments to generate the graph:
+*	At first, randomly.
+
+
+While all of this data is important, it does not comply with the *original* definition of a barren plateau.
+That definition can be seen as Definition 1 in "Effect of barren plateaus on gradient-free optimization," Arrasmith et al., 2021.
+Specifically, it considers the (classical, probabilistic) expectation value and variance of all partial derivatives when looking at a random distribution of thetas.
+The expectation value has to be 0, and the variance needs to vanish exponentially with n (the number of qubits).
+Calculating this data is not trivial.
+An alternative condition for a barren plateau can be found in Proposition 1 of Arrasmith et al.
+It does not require gradients, but calculating expectation values and variances are still required.
+
+A more concerning problem than calculating said expectation values and variances is that this definition is global to the parameter space.
+That is, a barren plateau, according to this definition, affects the *entire* parameter space.
+In fact, this means that we cannot expect stronger gradients when using specific MUB states/transformations.
