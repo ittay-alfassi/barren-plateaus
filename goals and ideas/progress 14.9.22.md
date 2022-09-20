@@ -36,3 +36,4 @@ Issues & Modifications to tackle:
 -   Change the initial parameter vector to sample from [-pi, pi) and not [0,1).
 -   When using COBYLA on a linux machine, a weird warning popped up. No idea what it was or what caused it.
     Try and see if you can reproduce it.
+-   Trythe pair method described by Tal (for all pairs of qubits, try all MUB states and 0 in the rest).
