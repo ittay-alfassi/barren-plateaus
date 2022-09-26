@@ -108,11 +108,26 @@ Conclusions on optimizers:
 the COBYLA optimizer is usually faster for the 3 qubit case with low correctness bounds.
 with a larger number of qubits, though, Powell managed to go "lower" with the optimization.
 
-### k-based
+### finding an advantage
 -   On a standard (maybe harder?) experiment, test different values of k x correctness x tol.
     For every such experiment, check the minimum nfev for k random angles and k random MUBs.
     
-### k-basee: n qubits
+### finding an advantage: n qubits
 -   Do the same with the n found earlier.
 
 After these experiments, it should be clear whether there is any advantage to using MUBs with VQC.
+
+
+I did one main experiment.
+The experiment compared VQC runs with random starting thetas vs different MUB pairs.
+I used the Arrasmith ansatz with 7 qubits and layers.
+I got 20 samples of random vectors and 22 samples of half-mub runs.
+I used COBYLA with epsilonic (1e-123) tolerance, and a success bound of 0.1.
+
+None of the experiments reached 0.1.
+When checking at what iteration each experiment reached 0.4, both came up with rather similar distributions.
+Same for final values.
+My current conclusion is that there is no advantage to using Half-MUBs over random initial vectors.
+
+However, there are other experiments to perform to confirm this conclusion.
+
