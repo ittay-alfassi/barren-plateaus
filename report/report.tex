@@ -10,6 +10,10 @@
 \usepackage[sorting=none]{biblatex}
 \addbibresource{refs.bib}
 
+\newcommand{\mytodo}[1]{\textcolor{red}{TODO: #1}}
+\newcommand{\thetas}{\vec{\theta}}
+\DeclareMathOperator{\tr}{Tr}
+
 
 
 \title{Mutual Unbiased Bases as a Countermeasure to Barren Plateaus}
@@ -26,18 +30,126 @@
 \tableofcontents
 
 \section{Introduction}
+Noisy, Intermediate-Scale Quantum (NISQ) computers are quantum computers that are limited certain ways. They are usually limited in the number of qubits, connectivity between qubits, noise, and maximal circuit depth.
+A computational paradigm that utilizes NISQ devices is the one of hybrid quantum-classical algorithms.
+Most hybrid algorithms translate a given problem to an optimization problem.
+The parameters of the optimization problem control some parametrized quantum state, the problem's cost function is evaluated on the quantum computer, and the optimzation steps are performed by the classical computer. These algorithms are called Variational Quantum Algorithms (VQAs)~\cite{Cerezo2021}. \mytodo{Make sure this is accurate!}
+
+While being a leading methodology for the use of quantum computers today, VQAs suffer from several problems. One such problem is the problem of Barren Plateaus~\cite{mcclean_barren_2018}. Informally, barren plateaus imply that over the optimization parameter space, the gradient of the cost function is negligibly small and the optimization process does not how to converge.
+
+This problem affects many  VQAs that employ different types of quantum circuits and classical optimizers (even those that are gradient-free). As the number of qubits and the depth of the quantum circuits increases, this problem worsens exponentially.
+Effectively, this means that VQAs will not be able to give an advantage over their classical counterparts in problems that are not small in size.
+
+To address this issue, in this project, I will try and utilize Mutually Unbiased Bases (MUBs), their states, and their properties.
+The basic intuition behind this method is that, for any number of qubits, the set of all MUB states spans the entire Hilbert space (with real coefficients).
+
+Thus, inserting them (in some fashion) into the optimization process can allow for an ``exhaustive search'' over the Hilbert space of all states.
+
+Unfortunately, this method did not succeed. However, I will detail the different aspects of this approach, the experiments implemented, the conclusions I reached, and possible methods to still utilize the idea of MUB states in VQAs.
 
 
 \section{Preliminaries}
 
 \subsection{Variational Quantum Algorithms}
+A Variational Quantum Algorithm is an algorithm that takes some computational problem, and solved is by hybrid classical-quantum optimization.
+VQAs are comprised of several elements: The quantum circuit, the cost function, and the optimizer.
 
-\subsubsection{Variational Quantum Compiling}
+\begin{enumerate}
+    \item \textbf{The Quantum Circuit.} Every VQA problem uses a quantum circuit with some parametric values.
+    Its structure can be generally written as the following:
+    $$ U(\thetas) = \prod_{l=1}^{L} U_l(\theta_l) W_l$$
+    Where $U_l(\theta_l) = \exp(-i\theta_l V_l)$, $V_l$ is a Hermitian operator, and $W_l$ is a generic unitary operator that does not depend on any angle $\theta_l$.
+    
+    In some VQAs, an \textbf{initial state} $\ket{\psi_0}$ is also a part of the algorithm, and it is related to the quantum circuit.
 
-\subsection{Optimizers for Variational Quantum Algorithms}
+    The term \emph{ansatz} (German for ``approach''/``attempt'') is used in literature to either describe the initial state $\ket{\psi_0}$, the parametric circuit $U(\thetas)$, or the application of the parametric circuit to the initial state $\ket{\psi(\thetas)} = U(\thetas)\ket{\psi_0}$.
+    In this project, I will use the term ansatz to refer to the parametric quantum circuit.
+
+    Ansatzes\footnote{The correct plural form is Ansaetze.} can either be problem-specific or problem-agnostic.
+
+    A problem-specific ansatz is tailored to the problem solved by the VQE using a-priori knowledge on the structure of the problem. Through this tailoring there is a better chance that the circuit can reach values that are optimal for the problem at hand. When using a problem-specific ansatz, the initial state is usually also tailored according to the same information.
+    
+    A problem-agnostic ansatz is not tailored to the problem specifically, and can be used with no relevant information. It is usually comprised of repeated layers of quantum gates. Each layer is comprised of quantum gates that are usually easy to implement directly on quantum hardware, in contrast to problem-specific ansatzes. Problem-agnostic ansatzes are usually called ``hardware-efficient'' for this reason.
+    In this project, I focused on using hardware-efficient ansatzes.
+    
+    \item \textbf{The Cost Function.} The cost function $C(\thetas)$ defines the goal of the VQA. It is defined as a function from the parameters of the ansatz to the real numbers.
+    The goal of the VQA is to find
+    $$\thetas^* = \arg\min_{\thetas} C(\thetas) $$ 
+
+    The cost function always depends on the ansatz, some Hermitian operators, and some initial states.
+    Generally, it can be written as
+    $$ C(\thetas) = \sum_k f_k(\tr[O_k U(\thetas) \rho_k U^\dagger(\thetas)])$$
+    Where $\{f_k\}$ is a set of functions, $\{O_k\}$ is a set of operators, and $\{\rho_k\}$ is a set of input states.
+    
+    The trademark of VQAs is that they use a quantum computer to estimate the cost function $C(\thetas)$ (or its derivatives) while leveraging the power of classical optimizers to train the parameters $\thetas$.
+    
+    \item \textbf{The Optimizer.} While not necessarily dependent on the problem the VQA is trying to solve, the classical optimizer is an important part of the algorithm.
+    The optimizer is run on a classical computer, and performs an iterative process: it uses data on the current parameters of the cost function to calculate their value in the next iteration. More details can be found in subsection~\ref{subsec:optimizers}.
+\end{enumerate}
 
 
-\section{Barren Plateaus}
+\subsubsection{Example: Variational Quantum Eigensolver}
+One of the earliest examples for a VQA is the VQE algorithm, proposed by Peruzzo et al.~\cite{peruzzo_variational_2014}. In this algorithm, The goal is to find the lowest eigenvalue of some Hamiltonian $H$.
+The cost function is straightforwardly defined as the expectation value of the parametric state over the Hamiltonian:
+
+$$ C(\thetas) = \bra{\psi(\thetas)} H \ket{\psi(\thetas)} = \bra{\psi_0} U^\dagger(\thetas) H U(\thetas) \ket{\psi_0} $$
+
+In case $H$ is a molecular Hamiltonian (converted to a qubit Hamiltonian using an appropriate transformation), a problem-specific ansatz can be used. One such option is the Unitary Coupled-Cluster (UCC) ansatz, together with the Hartree-Fock state as the initial state.
+
+Of course, a hardware-efficient ansatz can be used for any structure of $H$.
+
+\subsubsection{Example: Variational Quantum Compiling}
+A different example for a VQA is the problem of Variational Quantum Compiling (VQC), initially defined by Khatri et al.~\cite{khatri_quantum-assisted_2019} as Quantum-Assisted Quantum Compiling (QAQC).
+
+In VQC, the input of the problem is a general $n$-qubit unitary operation $V$\footnote{In the Khatri paper, the target unitary is denoted as $U$, while the ansatz is denoted $V$. I switched the notations to stay consistent with the rest of the examples and papers.}. The goal of the algorithm is to control the parameters of a parametric quantum circuit $U(\thetas)$ so its behavior will be similar to that of $V$.
+
+Formally, there are two possible goals: either that $U(\thetas)$ and $V$ will perform the same operation on all states, or that $U(\thetas)$ and $V$ will perform the same operation on a specific input state.
+In this project, I will use the latter as the problem definition. Thus, we wish that $V\ket{0} = U(\thetas)\ket{0}$.
+
+There are two different cost functions presented in~\cite{khatri_quantum-assisted_2019}.
+The first is straightforward, and is defined by
+
+$$ C^{\textrm{global}} = 1 - \left|\bra{0}UV^\dagger\ket{0}\right|^2 $$
+
+Another cost function, called the local cost function, is defined by 
+
+$$ C^{\textrm{local}} = 1 - \frac{1}{n} \sum_{j=1}^{n} p_0^{(j)} $$
+
+where
+$$ p_0^{(j)} = \tr[({\ket{0}\bra{0}}_j \otimes I) U^\dagger V \ket{0}\bra{0} V^\dagger U] $$
+and ${\ket{0}\bra{0}}_j \otimes I$ is the tensor product of the matrix $\ket{0}\bra{0}$ in the jth term and identity matrices in all other terms.
+The operational meaning of $p_0^{(j)}$ is the probability to obtain the zero measurement outcome on qubit qubit $j$ for the state $U^\dagger V\ket{0}$.
+
+it is proven in~\cite{sharma_noise_2020} that
+
+$$ C^{\textrm{local}} \leq C^{\textrm{global}} \leq nC^{\textrm{local}} $$
+
+However, $C^\textrm{global}$ suffers from a provably vanishing gradient as $n$ increases, while $C^\textrm{local}$ does not. Thus, we will use $C^\textrm{local}$ or a linear combination of both costs in our experiments.
+
+\subsection{Optimizers for Variational Quantum Algorithms} \label{subsec:optimizers}
+Classical optimizers perform the task of finding a (hopefully global) minimum of some scalar function.
+An optimizer for a function $f$ needs to find the vector $\vec{x} \in S$ with $S \subseteq R^n$ that has a minimal or maximal value. In this project, we will only use optimizers for minimization.
+
+In each step, an optimizer is given a point in the parameter space of the cost function $\thetas_{i}$, and is tasked with finding a new guess for parameter values $\thetas_{i+1}$, which hopefully has a lower cost value.
+
+The optimizer can either use the value of the cost function, its partial derivative (its gradient vector), or its second partial derivatives (its Hessian matrix).
+
+Methods that use the second derivative are called Quasi-Newton methods (as Newton's method uses the second derivative). Methods that use the first derivative are called Gradient-Based methods. Methods that do not use the derivative at all are called Gradient-Free methods.
+
+In this project, I focused on two gradient-free optimizers: the COBYLA optimizer and the Powell optimizer.
+
+\subsubsection{COBYLA}
+Constrained Optimization BY Linear Approximation (COBYLA) is a numerical optimization method for constrained problems that does not use the derivative. It was invented by Powell, and is based on linear approximations to the objective function and each constraint.
+More details can be found in~\cite{Powell1994}.
+
+\subsubsection{Powell}
+Powell's method is also called the ``conjugate direction'' method.
+The optimization uses a set of directions in each step. It performs 1-dimensional bi-directional minimization along each vector in the direction set. Using the results of these minimizations, the direction set is updated (a new direction is added, and the most dominant vector is deleted).
+More details can be found in~\cite{Powell1964}.
+
+\mytodo{Check with Tal how much detail is required on the optimizers.}
+
+\section{Barren Plateaus} \label{sec:bps}
 
 \subsection{Barren Plateaus in Gradient-Free Optimization}
 
