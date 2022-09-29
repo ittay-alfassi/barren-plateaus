@@ -11,6 +11,14 @@
 \usepackage[sorting=none]{biblatex}
 \addbibresource{refs.bib}
 
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    urlcolor=cyan,
+    citecolor=cyan
+}
+
 \newcommand{\mytodo}[1]{\textcolor{red}{TODO: #1}}
 \newcommand{\thetas}{\vec{\theta}}
 \newcommand{\del}{\partial}
@@ -53,6 +61,8 @@ Thus, inserting them (in some fashion) into the optimization process can allow f
 
 Unfortunately, this method did not succeed. However, I will detail the different aspects of this approach, the experiments implemented, the conclusions I reached, and possible methods to still utilize the idea of MUB states in VQAs.
 
+This project is mainly based on the work of Arrasmith et al.~\cite{arrasmith_effect_2021}.
+
 
 \section{Preliminaries}
 
@@ -73,7 +83,7 @@ VQAs are comprised of several elements: The quantum circuit, the cost function, 
     The term \emph{ansatz} (German for ``approach''/``attempt'') is used in literature to either describe the initial state $\ket{\psi_0}$, the parametric circuit $U(\thetas)$, or the application of the parametric circuit to the initial state $\ket{\psi(\thetas)} = U(\thetas)\ket{\psi_0}$.
     In this project, I will use the term ansatz to refer to the parametric quantum circuit.
 
-    Ansatzes\footnote{The correct plural form is Ansaetze.} can either be problem-specific or problem-agnostic.
+    Ansatzes\footnote{The correct plural form in German is Ansaetze.} can either be problem-specific or problem-agnostic.
 
     A problem-specific ansatz is tailored to the problem solved by the VQE using a-priori knowledge of the structure of the problem. Through this tailoring, there is a better chance that the circuit can reach values that are optimal for the problem at hand. When using a problem-specific ansatz, the initial state is usually also tailored according to the same information.
     
@@ -115,16 +125,16 @@ Of course, a hardware-efficient ansatz can be used for any structure of $H$.
 \subsubsection{Example: Variational Quantum Compiling}
 A different example of a VQA is the problem of Variational Quantum Compiling (VQC), initially defined by Khatri et al.~\cite{khatri_quantum-assisted_2019} as Quantum-Assisted Quantum Compiling (QAQC).
 
-In VQC, the input of the problem is a general $n$-qubit unitary operation $V$\footnote{In the Khatri paper, the target unitary is denoted as $U$, while the ansatz is denoted $V$. I switched the notations to stay consistent with the rest of the examples and papers.}. The goal of the algorithm is to control the parameters of a parametric quantum circuit $U(\thetas)$ so its behavior will be similar to that of $V$.
+In VQC, the input of the problem is a general $n$-qubit unitary operation $V$.\footnote{In the Khatri paper, the target unitary is denoted as $U$, while the ansatz is denoted $V$. I switched the notations to stay consistent with the rest of the examples and papers.} The goal of the algorithm is to control the parameters of a parametric quantum circuit $U(\thetas)$ so its behavior will be similar to that of $V$.
 
 Formally, there are two possible goals: either that $U(\thetas)$ and $V$ will perform the same operation on all states, or that $U(\thetas)$ and $V$ will perform the same operation on a specific input state.
-In this project, I will use the latter as the problem definition. Thus, we wish that $V\ket{0} = U(\thetas)\ket{0}$.
+In this project, I will use the latter as the problem definition. Thus, we wish that $V\ket{\vec{0}} = U(\thetas)\ket{\vec{0}}$.
 
 There are two different cost functions presented in~\cite{khatri_quantum-assisted_2019}.
 The first is straightforward and is defined by
 
 \begin{equation}
-    C^{\textrm{global}} = 1 - \left|\bra{0}UV^\dagger\ket{0}\right|^2
+    C^{\textrm{global}} = 1 - \left|\bra{\vec{0}}UV^\dagger\ket{\vec{0}}\right|^2
 \end{equation}
 
 Another cost function, called the local cost function, is defined by 
@@ -134,11 +144,11 @@ Another cost function, called the local cost function, is defined by
 \end{equation}
 
 where
-\begin{equation}
-    p_0^{(j)} = \tr[({\ket{0}\bra{0}}_j \otimes I) U^\dagger V \ket{0}\bra{0} V^\dagger U]
+\begin{equation} \label{eqn:local_vqc_cost}
+    p_0^{(j)} = \tr[({\ket{0}\bra{0}}_j \otimes I) U^\dagger V \ket{\vec{0}}\bra{\vec{0}} V^\dagger U]
 \end{equation}
 and ${\ket{0}\bra{0}}_j \otimes I$ is the tensor product of the matrix $\ket{0}\bra{0}$ in the jth term and identity matrices in all other terms.
-The operational meaning of $p_0^{(j)}$ is the probability to obtain the zero measurement outcome on qubit $j$ for the state $U^\dagger V\ket{0}$.
+The operational meaning of $p_0^{(j)}$ is the probability to obtain the zero measurement outcome on qubit $j$ for the state $U^\dagger V\ket{\vec{0}}$.
 
 it is proven in~\cite{sharma_noise_2020} that
 
@@ -213,9 +223,97 @@ Certain technical details and special steps in the method are also omitted and c
 
 
 \section{Barren Plateaus} \label{sec:bps}
+Informally, a barren plateau is a large section of the parameter space in which the value of the cost function $C$ is ``flat'', and has no apparent direction in which to move in order to reach a minimum point. The term was first coined by McClean et al. in~\cite{mcclean_barren_2018}.
+
+When considering a cost function with 2 parameters, this definition coincides with its geometrical intuition. The plane defined by $\{(\theta_1, \theta_2, C(\theta_1, \theta_2)) | (\theta_1, \theta_2) \in \mathbb{R}^2\}$ will have large, flat sections, in which the ``dips'' that represent minima are not indicated by a slope around them (other than a very small neighborhood of the minimum). Such an example can be seen in Figure~\ref{fig:bp}.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[scale=0.5]{bp_3d.png}
+    \caption{A barren plateau in an inverted bi-variate Gaussian with a small variance.}
+    \label{fig:bp}
+\end{figure}
+
+This is formally defined by the expectation value and variance of the partial derivatives.
+As defined in \cite{arrasmith_effect_2021}:
+
+\begin{definition} \label{def:bp}
+    Consider the cost function defined in Eq.~(\ref{eqn:general_cost}). This cost exhibits a barren plateau if, for all $\theta_\mu \in \thetas$, the expectation value of the cost function partial derivative
+    $\del C / \del\theta_\mu = \del_\mu C(\thetas)$
+    is
+    $E_{\thetas}[\del_\mu C(\thetas)] = 0$
+    and its variance vanishes exponentially with the number of qubits n as 
+    \begin{equation} \label{eqn:vanishing}
+        \Var_{\thetas}[\del_\mu C(\thetas)] \leq F(n) \textrm{,   with   }F(n) \in O\left(\frac{1}{b^n}\right)
+    \end{equation}
+    for some $b > 1$. As indicated, the expectation values are taken over the parameters $\thetas$.
+\end{definition}
+
+\subsection{Ansatzes and Functions Affected By Barren Plateaus}
+Papers in the field of barren plateaus have shown that many types of cost functions exhibit barren plateaus.
+
+The original work by McClean et al.~\cite{mcclean_barren_2018} shows that cost functions of the form in Eq. (\ref{eqn:general_cost}) that use random quantum circuits of polynomial depth and exhibit a property known as a \emph{2-design} suffer from barren plateaus.
+The definition of a 2-design is beyond the mathematical scope of this project.
+
+However, the work of Arrasmith et al.~\cite{arrasmith_effect_2021} notes that hardware-efficient layered ansatzes are approximate 2-designs (although they did not show this result themselves).
+As such, cost functions that use these ansatzes suffer from barren plateaus when the number of layers scales linearly with the number of qubits.
+
+Another paper, by Cerezo et al.~\cite{cerezo_cost_2021}, shows that if the cost function makes use of global operators, barren plateaus will be encountered in \emph{any} circuit depth.
+For this reason, it is preferable to use the local cost function in VQC problems and not the global cost function.
+% A paper by Wang et al.~\cite{wang_noise-induced_2021}
+
+\subsubsection{Barren Plateaus in VQC}
+In section 4 of Arrasmith~\cite{arrasmith_effect_2021}, it is shown that even a fairly simple VQC problem suffers from barren plateaus.
+
+The specific problem shown in the paper is concerned with the trivial target unitary $V = I$.
+Thus, we are trying to optimize the parameters of a parametric quantum circuit $U(\thetas)$ such that $U(\thetas)\ket{\vec{0}} = I\ket{\vec{0}} = \ket{\vec{0}}$.
+
+The quantum circuit used is a layered hardware-efficient ansatz.
+Each layer is defined by the following structure:
+\begin{itemize}
+    \item A general unitary single-qubit rotation gate $U(\theta_1, \theta_2, \theta_3)$ gate is applied to each qubit.
+    \item A layer of Control-NOT gates is applied between even pairs of qubits (that is, even indices act as controls and odd indices act as targets).
+    \item Another layer of general unitary single-qubit rotations is applied.
+    \item A layer of Control-NOT gates is applied between odd pairs of qubits (odd indices act as controls and even indices act as targets).
+\end{itemize}
+A sketch of a single layer of the circuit can be seen in Figure~\ref{fig:layer}.
+
+The cost function used is the local VQC cost function, as shown in Eq. (\ref{eqn:local_vqc_cost}).
+Arrasmith~\cite{arrasmith_effect_2021} claims that when the number of layers scales linearly with the number of qubits, this problem instance suffers from barren plateaus.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics{arrasmith_layer.png}
+    \caption{A single layer of the hardware-efficient ansatz used in the project, as designed in Qiskit.}
+    \label{fig:layer}
+\end{figure}
 
 \subsection{Barren Plateaus in Gradient-Free Optimization}
+Seeing as the definition of barren plateaus only discusses the partial derivatives of the cost function, one might assume that using gradient-free optimizers solves this issue.
+However, the main result of Arrasmith shows that this is incorrect.
 
+The following theorem is shown in~\cite{arrasmith_effect_2021}:
+
+\begin{theorem}
+    Consider the cost function of Eq.~(\ref{eqn:general_cost}). Let ${\thetas}_A$ and $\thetas_B$ be two randomly chosen points in parameter space.
+    Without loss of generality we assume that $\thetas_B = \thetas_A + L\hat{l}$ for random $L$ and $\hat{l}$ so that $E_{\thetas_A, \thetas_B}[\dots] = E_{\thetas_A, L, \hat{l}}[\dots]$.
+    If the cost exhibits a barren plateau according to Definition~\ref{def:bp}, then the expectation value of the difference $\Delta C = C(\thetas_B) - C(\thetas_A)$ is $E_{\thetas_A, L, \hat{l}}[\Delta C] = 0$, and the variance is exponentially vanishing with n as 
+    \begin{equation}
+        \Var_{\thetas_A,L,\hat{l}}[\Delta C] \leq \hat{G}(n)
+    \end{equation}
+    with
+    \begin{equation}
+        \hat{G}(n) = m^2 \bar{L}^2 F(n)\textrm{,    and     } \hat{G}(n) \in \tilde{O}\left(\frac{1}{b^n}\right).
+    \end{equation}
+    for some $b>1$. Here m is the dimension of the parameter space, $F(n)$ was defined in (\ref{eqn:vanishing}), and
+    \begin{equation}
+        \bar{L} = E_{L,\hat(l)}[L]
+    \end{equation}
+    is the average distance between any two points in parameter space.
+\end{theorem}
+
+The effective meaning of this theorem is that the difference in the cost function between different points in the parameter space is exponentially vanishing in $n$.
+Thus, even though gradient-free optimizers do not use derivatives, they are still affected --- Their main tool for decision-making, which is the difference in the values of the function, gives almost no information.
 
 \section{Mutually Unbiased Bases}
 
