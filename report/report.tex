@@ -22,6 +22,10 @@
 \newcommand{\mytodo}[1]{\textcolor{red}{TODO: #1}}
 \newcommand{\thetas}{\vec{\theta}}
 \newcommand{\del}{\partial}
+\newcommand{\base}{\mathcal{B}}
+\newcommand{\tvect}[2]{%
+  \ensuremath{\Bigl(\negthinspace\begin{smallmatrix}#1\\#2\end{smallmatrix}\Bigr)}}
+
 \DeclareMathOperator{\tr}{Tr}
 \DeclareMathOperator{\Var}{Var}
 
@@ -114,7 +118,7 @@ VQAs are comprised of several elements: The quantum circuit, the cost function, 
 One of the earliest examples of a VQA is the VQE algorithm, proposed by Peruzzo et al.~\cite{peruzzo_variational_2014}. In this algorithm, The goal is to find the lowest eigenvalue of some Hamiltonian $H$.
 The cost function is straightforwardly defined as the expectation value of the parametric state over the Hamiltonian:
 
-\begin{equation}
+\begin{equation} \label{eqn:vqe_cost}
     C(\thetas) = \bra{\psi(\thetas)} H \ket{\psi(\thetas)} = \bra{\psi_0} U^\dagger(\thetas) H U(\thetas) \ket{\psi_0}
 \end{equation}
 
@@ -316,11 +320,64 @@ The effective meaning of this theorem is that the difference in the cost functio
 Thus, even though gradient-free optimizers do not use derivatives, they are still affected --- Their main tool for decision-making, which is the difference in the values of the function, gives almost no information.
 
 \section{Mutually Unbiased Bases}
+The state space of an $n$-qubit system is a $2^n$ dimensional Hilbert space.
+As such, an orthonormal basis for said space contains $2^n$ distinct vectors.
+There are infinitely many bases for such a space, but some combinations of bases exhibit special properties. One property, which is the main focus of this project, is \emph{Mutual Unbias}.
+
+The following is a definition for Mutually Unbiased Bases~\cite{bandyopadhyay_new_2002}:
+\begin{definition}
+    Let $\base_1 = \{\ket{\phi_i}\}$ and $\base_2 = \{\ket{\psi_i}\}$ be two orthonormal bases in the $d$ dimensional state space.
+    They are said to be \textbf{mutually unbiased bases (MUB)} iff the following holds:
+    \begin{equation}
+        \forall i,j : |\langle \psi_i | \phi_j \rangle | = \frac{1}{\sqrt{d}}
+    \end{equation}
+    A set $\{\base_1,\dots,\base_m\}$ of orthonormal bases in $\mathbb{C}^d$ is called a \emph{set of mutually unbiased bases} (a set of MUB) if each pair of bases $\base_i$ and $\base_j$ are mutually unbiased.
+\end{definition}
+
+The intuition for such a definition is that, if a state from one basis is measured in the other, every measurement possibility has equal probability.
 
 \subsection{Generation of Mutually Unbiased Bases}
+The question of the existence, number, and generation of MUB sets is only answered for certain cases.
+
+The following results have been achieved~\cite{bandyopadhyay_new_2002}:
+\begin{itemize}
+    \item For an $n$-qubit state space, if $n$ is prime, there exists a set of $2^n+1$ MUBs.
+    \item For an $n$-qubit state space, if $n$ is a prime power (that is, $n = p^k$ for a prime $p$ and a natural number $k$), there exists a set of $2^n+1$ MUBs.
+\end{itemize}
+For each of these results, a constructive proof exists.
+For the case in which $n$ is not a prime or a prime power, the question of the size and generation of MUB sets is open.
+
+It is important to note, of course, that once a MUB set is found, there is an infinite amount of possibilities for MUB sets of the same size. Applying any arbitrary unitary $U$ to all states of the set of bases will preserve the constraints on the inner products of every pair of states.
+
+Connections between the problem of finding MUB sets and other problems have been made. For example, Lawrence et al.~\cite{lawrence_mutually_2002} showed that the set of $4^n-1$ Pauli operators (in the $n$-qubit case) can be partitioned into $2^n+1$ distinct subsets, each consisting of $2^n-1$ commuting operators. The same work shows two interesting conclusions:
+\begin{itemize}
+    \item The set of eigenbases that mutually diagonalize each subset is a set of MUBs.
+    That is, if each subset $\mathcal{F}_i$ is mutually diagonalized by an orthonormal basis $\base_i$, then the set $\{\base_i\}$ is a MUB set.
+    \item Each such partitioning defined a unique choice of $2^n+1$ MUBs in the $n$-qubit Hilbert space.
+\end{itemize}
+
+I used the examples given in the work of Lawrence et al. to construct a set of MUBs for 2 and 3 qubits.
 
 \subsection{MUB States as an Exhaustive Search}
 
+The set of MUB states for 1 qubit is well known. The set contains 3 MUBs, and each basis is the eigenbasis of a Pauli matrix.
+Specifically, the bases and states are
+$$ \base_z = \{ \ket{0}, \ket{1}\}  = \{\tvect{1}{0}, \tvect{0}{1}\}$$
+$$ \base_x = \{ \ket{+}, \ket{-}\}  = \{\frac{1}{\sqrt{2}}\tvect{1}{1}, \frac{1}{\sqrt{2}}\tvect{1}{-1}\}$$
+$$ \base_y = \{ \ket{+_i}, \ket{-_i}\}  = \{\frac{1}{\sqrt{2}}\tvect{1}{i}, \frac{1}{\sqrt{2}}\tvect{1}{-i}\}$$
+
+When displayed on the Bloch sphere, these states are presented as the poles of the sphere in the z, x, and y axes, appropriately. As such, every 1-qubit state is reachable through a linear combination of these six states with real coefficients.
+
+This is our initial intuition: these states reach every pole of the sphere that defines all 1-qubit states.
+We (Tal Mor and I) believed that this can be extended to higher dimensions. If our hypothesis of the importance of MUBs is correct, they can be useful when trying to check for a certain property, \textbf{or when searching for a specific point in space.}
+
+An observation made in~\cite{lawrence_mutually_2002} supports our hypothesis.
+In~\cite{lawrence_mutually_2002}, a MUB is generated by being the orthonormal basis that mutually diagonalizes a subset of Pauli operators.
+Let $\{O_i\}$ be such a subset of Pauli operators, and let $\{\ket{\psi_i}\}$ be the mutually diagonalizing eigenbasis calculated for that subset.
+Let $U_i(\theta) = exp(-i\theta O_i)$ be a unitary high-dimensional rotation defined by $O_i$.
+When $U_i$ acts on a MUB state $\ket{\psi_j}$, that state will not be affected (up to a global phase) \textbf{and act as a pole}.
+
+In the next section, I will discuss the different methods to use the concept of MUBs as an exhaustive search in mitigating barren plateaus.
 
 \section{MUB Utilization Techniques}
 
