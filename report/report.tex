@@ -4,7 +4,7 @@
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{braket}
-\usepackage{amsmath}
+\usepackage{amsmath} 
 \usepackage{amssymb}
 \usepackage[headings]{fancyhdr}
 \graphicspath{ {./Figures/} }
@@ -14,17 +14,19 @@
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
-    linkcolor=blue,
+    linkcolor=black,
     urlcolor=cyan,
-    citecolor=cyan
+    citecolor=blue
 }
 
 \newcommand{\mytodo}[1]{\textcolor{red}{TODO: #1}}
 \newcommand{\thetas}{\vec{\theta}}
 \newcommand{\del}{\partial}
 \newcommand{\base}{\mathcal{B}}
-\newcommand{\tvect}[2]{%
-  \ensuremath{\Bigl(\negthinspace\begin{smallmatrix}#1\\#2\end{smallmatrix}\Bigr)}}
+% \newcommand{\tvect}[2]{%
+%   \ensuremath{\Bigl(\negthinspace\begin{smallmatrix}#1\\#2\end{smallmatrix}\Bigr)}}
+
+\newcommand{\tvect}[2]{{#1 \choose #2}}
 
 \DeclareMathOperator{\tr}{Tr}
 \DeclareMathOperator{\Var}{Var}
@@ -34,7 +36,7 @@
 
 
 
-\title{Mutual Unbiased Bases as a Countermeasure to Barren Plateaus}
+\title{Mutual Unbiased Bases as a Countermeasure to Barren Plateaus in Variational Quantum Algorithms}
 
 \author{Ittay Alfassi\footnote{Email: ittay.al@cs.technion.ac.il}}
 
@@ -87,7 +89,7 @@ VQAs are comprised of several elements: The quantum circuit, the cost function, 
     The term \emph{ansatz} (German for ``approach''/``attempt'') is used in literature to either describe the initial state $\ket{\psi_0}$, the parametric circuit $U(\thetas)$, or the application of the parametric circuit to the initial state $\ket{\psi(\thetas)} = U(\thetas)\ket{\psi_0}$.
     In this project, I will use the term ansatz to refer to the parametric quantum circuit.
 
-    Ansatzes\footnote{The correct plural form in German is Ansaetze.} can either be problem-specific or problem-agnostic.
+    Ansatzes\footnote{The plural form of ansatz in German is Ansaetze.} can either be problem-specific or problem-agnostic.
 
     A problem-specific ansatz is tailored to the problem solved by the VQE using a-priori knowledge of the structure of the problem. Through this tailoring, there is a better chance that the circuit can reach values that are optimal for the problem at hand. When using a problem-specific ansatz, the initial state is usually also tailored according to the same information.
     
@@ -114,7 +116,7 @@ VQAs are comprised of several elements: The quantum circuit, the cost function, 
 \end{enumerate}
 
 
-\subsubsection{Example: Variational Quantum Eigensolver}
+\subsubsection{Example: Variational Quantum Eigensolver} \label{subsec:vqe}
 One of the earliest examples of a VQA is the VQE algorithm, proposed by Peruzzo et al.~\cite{peruzzo_variational_2014}. In this algorithm, The goal is to find the lowest eigenvalue of some Hamiltonian $H$.
 The cost function is straightforwardly defined as the expectation value of the parametric state over the Hamiltonian:
 
@@ -126,7 +128,7 @@ In case $H$ is a molecular Hamiltonian (converted to a qubit Hamiltonian using a
 
 Of course, a hardware-efficient ansatz can be used for any structure of $H$.
 
-\subsubsection{Example: Variational Quantum Compiling}
+\subsubsection{Example: Variational Quantum Compiling} \label{subsec:vqc}
 A different example of a VQA is the problem of Variational Quantum Compiling (VQC), initially defined by Khatri et al.~\cite{khatri_quantum-assisted_2019} as Quantum-Assisted Quantum Compiling (QAQC).
 
 In VQC, the input of the problem is a general $n$-qubit unitary operation $V$.\footnote{In the Khatri paper, the target unitary is denoted as $U$, while the ansatz is denoted $V$. I switched the notations to stay consistent with the rest of the examples and papers.} The goal of the algorithm is to control the parameters of a parametric quantum circuit $U(\thetas)$ so its behavior will be similar to that of $V$.
@@ -223,7 +225,7 @@ The choice of the point to be removed is governed mainly by avoiding the degener
 When the improvements are insufficient, the value of $\rho$ is reduced, until some lower bound, which specifies the termination of the method, is reached.
 
 This explanation of the method is incomplete, and only describes the general principle behind the optimization. In addition, different specifications by Powell (for example, \cite{Powell1994} and \cite{powell_view_2007}) define certain requirements and symbols differently, such as using $\Phi$ or $F$ for the sorting of vertices, the use of $\mu$, and the use of $\rho$ as the trust radius or as a lower bound for it.
-Certain technical details and special steps in the method are also omitted and can be found in Section 2 of~\cite{Powell1994}.
+Certain technical details and special steps in the method are also omitted and can be found in section 2 of~\cite{Powell1994}.
 
 
 \section{Barren Plateaus} \label{sec:bps}
@@ -336,18 +338,18 @@ The following is a definition for Mutually Unbiased Bases~\cite{bandyopadhyay_ne
 
 The intuition for such a definition is that, if a state from one basis is measured in the other, every measurement possibility has equal probability.
 
-\subsection{Generation of Mutually Unbiased Bases}
+In general, the term ``MUB set'' refers to a set of bases that are pairwise mutually unbiased.
+The term ``MUB states'', in the context of some MUB set, is the collection of states that comprises the MUBs of that set.
+
+\subsection{Generation of Mutually Unbiased Bases} \label{subsec:mub_gen}
 The question of the existence, number, and generation of MUB sets is only answered for certain cases.
 
-The following results have been achieved~\cite{bandyopadhyay_new_2002}:
-\begin{itemize}
-    \item For an $n$-qubit state space, if $n$ is prime, there exists a set of $2^n+1$ MUBs.
-    \item For an $n$-qubit state space, if $n$ is a prime power (that is, $n = p^k$ for a prime $p$ and a natural number $k$), there exists a set of $2^n+1$ MUBs.
-\end{itemize}
-For each of these results, a constructive proof exists.
-For the case in which $n$ is not a prime or a prime power, the question of the size and generation of MUB sets is open.
+The following result has been achieved~\cite{bandyopadhyay_new_2002}:
+For an $d$-dimensional state space, if $d$ is prime or a prime power ($p^k$ for a prime $p$ and a natural number $k$), there exists a set of $d+1$ MUBs.
+There is constructive proof for this result.
+Because the dimension of an $n$-qubit state space is $2^n$ (a prime power), there is a construction for $2^n+1$ MUBs for every $n$.
 
-It is important to note, of course, that once a MUB set is found, there is an infinite amount of possibilities for MUB sets of the same size. Applying any arbitrary unitary $U$ to all states of the set of bases will preserve the constraints on the inner products of every pair of states.
+It is important to note, of course, that once a MUB set is found, there is an infinite amount of possibilities for MUB sets of the same size. Applying any arbitrary unitary $U$ to all states of the set of bases will preserve the constraints on the inner products of every pair of states, which gives a new MUB set (assuming $U$ did not act as a permutation on the set).
 
 Connections between the problem of finding MUB sets and other problems have been made. For example, Lawrence et al.~\cite{lawrence_mutually_2002} showed that the set of $4^n-1$ Pauli operators (in the $n$-qubit case) can be partitioned into $2^n+1$ distinct subsets, each consisting of $2^n-1$ commuting operators. The same work shows two interesting conclusions:
 \begin{itemize}
@@ -357,6 +359,7 @@ Connections between the problem of finding MUB sets and other problems have been
 \end{itemize}
 
 I used the examples given in the work of Lawrence et al. to construct a set of MUBs for 2 and 3 qubits.
+However, it is important to note that the generation of MUBs in this fashion requires exponential time in the number of qubits: it requires the simultaneous diagonalization of matrices that are exponential in size.
 
 \subsection{MUB States as an Exhaustive Search}
 
@@ -377,20 +380,88 @@ Let $\{O_i\}$ be such a subset of Pauli operators, and let $\{\ket{\psi_i}\}$ be
 Let $U_i(\theta) = exp(-i\theta O_i)$ be a unitary high-dimensional rotation defined by $O_i$.
 When $U_i$ acts on a MUB state $\ket{\psi_j}$, that state will not be affected (up to a global phase) \textbf{and act as a pole}.
 
-In the next section, I will discuss the different methods to use the concept of MUBs as an exhaustive search in mitigating barren plateaus.
+In the next section, I will discuss the different methods to use the concept of MUB states as an exhaustive search in mitigating barren plateaus.
+
 
 \section{MUB Utilization Techniques}
+This section specifies the novel ideas that Tal and I had for the project. As such, they are comprised of theoretic extensions and assumptions that we made.
+
+To explain our idea, let us consider a VQA in which the target is to reach a specific state.
+One such example is VQE (section~\ref{subsec:vqe}), in which the lowest eigenvalue is calculated by reaching the lowest eigenstate.
+An example of utilizing MUBs in a different type of VQA is given in subsection~\ref{subsec:mub_vqc}.
+
+Let us make the following assumptions:
+\begin{enumerate}
+    \item The cost function $C(\thetas)$ (shown in Eq.~(\ref{eqn:vqe_cost})) experiences a barren plateau in the parameter space. 
+    \item The optimization starts with a specific initial parameter vector, $\thetas_0$, whose entries were chosen uniformly randomly from the parameter space.
+    \item The ansatz $U(\theta)$ is \emph{expressive} --- Every state $\ket{\psi}$ in the state has a parameter vector $\thetas_\psi$ such that $U(\thetas_\psi)\ket{\vec{0}} = \ket{\psi}$.
+    \label{itm:expressive}
+\end{enumerate}
+
+The target state $\ket{\psi^*}$ that the VQA is trying to reach, according to assumption~\ref{itm:expressive}, has an appropriate parameter choice $\thetas^*$.
+However, since $C(\thetas)$ suffers from barren plateaus, any optimizer cannot travel long distances in the parameter space.
+Thus, if $U(\thetas_0)\ket{\vec{0}}$ is far from $\ket{\psi^*}$ (in terms of the state space), the VQA will not reach the required parameters.
+
+However, because the MUB states act as an exhaustive search over the Hilbert space (or so we hope), there exists some MUB state $\ket{\alpha}$ such that $U(\thetas_0)\ket{\alpha}$ and $\ket{\psi^*}$ are close (in terms of the state space).
+Equivalently, there exists some parameter vector $\thetas_0^\alpha$ such that $U(\thetas_0) \ket{\alpha} = U(\thetas_0^\alpha) \ket{\vec{0}}$, and $\thetas_0^\alpha$ and $\thetas^*$ are close \textbf{in terms of the parameter space}. Thus, an optimizer will be able to find an appropriate parameter set and reach $\ket{\psi^*}$ despite the barren plateaus of the cost function.
+
+\paragraph*{Non-Uniformity of Parameter Space}~\\
+An ansatz, even if fully expressive, does not necessarily bring its input to all output states in the Hilbert space with equal probability. For example, it could be that the vast majority of parameter vectors bring the result to a very small distance from the input vector.
+For this reason, the use of a MUB state to dramatically shift the output result is valuable.
+This phenomenon is connected to the mathematical term called \emph{Concentration of Measure} and to the Haar Measure for unitaries and states, as mentioned in~\cite{mcclean_barren_2018}.
+However, the research of these terms and phenomena were left outside the scope of this report.
+
+\paragraph*{Non-Expressive Ansatzes}~\\
+While assumption~\ref{itm:expressive} seems useful (both for applications and for our analysis), it is unfortunately unrealistic.
+Seeing as a general $2^n \times 2^n$ unitary matrix has an exponential number of degrees of freedom, reaching the entire set of unitary transformations requires an exponential number of parameters and an ansatz of exponential size.
+
+Thus, the output of a hardware-efficient ansatz of linear depth will only span a small subset of the Hilbert space.
+If our target is a state $\ket{\psi^*}$, it could lie outside the subset $\{U(\thetas)\ket{\vec{0}} | \thetas \in \mathbb{R}^m\}$. Using a MUB state as the input instead of $\ket{\vec{0}}$ could dramatically shift the subset and change it to include $\ket{\psi^*}$.
+
+\medskip
+The question that remains is how \emph{exactly} to use the set of MUB states.
 
 \subsection{Using All MUB states}
+The most trivial idea is to attempt optimization from all possible MUB states.
+That is, set a specific random initial parameter vector $\thetas_0$, and run a separate experiment with every MUB state as the initial state.
+
+However, there is a major drawback to this method.
+For $n$ qubits, there are $2^n+1$ different MUBs, with $2^n$ states each.
+Thus, this requires performing $O(4^n)$ experiments for every instance of the problem, which is non-scalable for reasonable problem sizes.
 
 \subsection{Sampling $k$ MUB states}
+A way to mitigate the drawback I just mentioned is to randomly sample a small number of MUB states from the entire set, and only run experiments from them.
+
+This will allow an arbitrary amount of experiments, which we can control.
+In addition, as will be discussed in section~\ref{subsec:random_thetas}, this serves as an interesting benchmark to compare against na{\"i}ve methods.
+
+However, as mentioned in subsection~\ref{subsec:mub_gen}, the cost of calculation of the MUBs and their states is still exponential in time. Although the work of MUB calculation only needs to happen once and can be considered pre-processing, this makes the current suggestion unfeasible, for example, for $n>60$ qubits.
+
+In addition, although the work of~\cite{bandyopadhyay_new_2002} shows a theoretical construction for the MUB sets for $n$ qubits, it is difficult to implement in practice.
+Thus, Tal and I faced an interesting question: what can be done, for $n$ qubits, with only the MUB states for 2 and 3 qubits?
 
 \subsection{``Half-MUB'' states}
+We came up with a relatively simple idea: given an $n$-qubit register, pick 2 or 3 qubits. Generate a MUB state between the chosen qubits, and keep the rest in the 0 state.
 
+The amount of such states for $n$ qubits is polynomial. There are ${n \choose 3} = O(n^3)$ triplets for the qubit choices, and each one has a constant amount of MUB state options.
+Thus, their generation (and even exhaustive experimentation with them) takes reasonable time.
+
+This method got the nickname ``Half-MUBs'', as its results resemble MUB states but do not give the same exhaustive properties.
+However, no one guaranteed that MUB states act as an exhaustive search themselves, so what the hell.
+
+\subsection{MUB Utilization in VQC} \label{subsec:mub_vqc}
+As explained in subsection~\ref{subsec:vqc}, the goal of VQC is to make the ansatz act like a specific target unitary (either in general or on a specific state).
+In this sense, it deviates from the previous discussions in this section, as it does not aim to reach a specific state, but a specific transformation.
+However, the claims presented in this section still apply in the case of VQC.
+
+The only difference is that instead of considering the state Hilbert space, we look at the group of unitary transformations on $n$ qubits $U(2^n)$.
+Non-Uniformity still applies: a uniform choice of parameter values for the ansatz does not necessarily send the resulting unitary to a uniformly random unitary in $U(2^n)$.
+Because of that, the prepending of the MUB generation circuit to the ansatz could move it dramatically closer to the target unitary (in terms of the parameter space).
+Non-expressivity applies in a similar fashion.
 
 \section{Experiments}
 
-\subsection{Control Group: Random Initialization Vectors}
+\subsection{Control Group: Random Initialization Vectors} \label{subsec:random_thetas}
 
 \subsection{Experiment 1: Reproducing the Arrasmith Barren Plateau}
 
@@ -399,6 +470,8 @@ In the next section, I will discuss the different methods to use the concept of 
 \subsection{Experiment 3: $n$ qubits and $n$ layers}
 
 \section{Discussion}
+
+\section{Future Work}
 
 \printbibliography
 \end{document}
