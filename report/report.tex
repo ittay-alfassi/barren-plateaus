@@ -464,13 +464,22 @@ In this section, I will detail the experiments that I implemented in this projec
 
 Section~\ref{subsec:random_thetas} explains the control group to which I compare each idea.
 
-Section~\ref{subsec:hyperparams} details the hyper-parameters of every experiment, and my default choices for each experiment.
+Section~\ref{subsec:hyperparams} details the hyper-parameters of every experiment.
 
-Section~\ref{subsec:recreate} shows a recreation of the Barren Plateau problem presented in section 4 of~\cite{arrasmith_effect_2021}.
+Section~\ref{subsec:exp_hyperparams} details the experiments used for picking hyper-parameters.
 
-Section~\ref{subsec:3qubits} shows experiments on 3 qubits and the use of $k$ random MUB states.
+Section~\ref{subsec:recreate} shows a recreation of the barren plateau simulation presented in of~\cite{arrasmith_effect_2021}.
 
-Section~\ref{subsec:nqubits} shows experiments on higher numbers of qubits and the use of $k$ half-MUB states.
+Section~\ref{subsec:mub_gen} details the synthesis of MUB-generating circuits.
+
+Section~\ref{subsec:3qubits} shows experiments on 3 qubits and $k$ random MUB states.
+
+Section~\ref{subsec:nqubits} shows experiments on higher numbers of qubits and $k$ half-MUB states.
+
+All experiments were implemented in Python, and can be found on GitHub under the link \url{https://github.com/ittay-alfassi/barren-plateaus}.
+MUB circuit synthesis was done using the Qsymm~\cite{qsymm} and BQSkit~\cite{bqskit} packages.
+The construction and execution of quantum circuits was done using the Qiskit~\cite{qiskit} package.
+The optimizers were taken from the SciPy package~\cite{scipy}.
 
 \subsection{Control Group: Random Initialization Vectors} \label{subsec:random_thetas}
 A critical step that we must take before testing the use of MUBs is a na{\"i}ve equivalent.
@@ -487,10 +496,39 @@ These parameters are often called hyper-parameters (to separate them from the pa
 These hyper-parameters can have a deep impact on the result of the experiment.
 Thus, it is important to list them and explain the choice of every hyper-parameter.
 
-\paragraph*{Optimizer}~\\
+\paragraph*{Optimizer}
 The same optimization problem can be solved by different optimizers.
 The optimizers that I used in my experiments are the gradient-free optimizers COBYLA and Powell.
-The reas
+
+\paragraph*{Tolerance Condition}
+\mytodo{merge with content on your macbook.}
+
+\paragraph*{Success Bound}
+Another possible halting condition for an optimizer is a manual limit.
+For example, in the numerical simulations of Arrasmith~\cite{arrasmith_effect_2021}, they stopped the optimization process once the cost function's value reached $C=0.4$.
+I call these values ``success bounds'', as they present a lower bound for the function's value, such that reaching it (or below it) counts as a success of the optimization procedure. Specifically, it signifies that we succeeded in overcoming the barren plateaus.
+
+In my experiments, I define two different success bounds: 0.4 and 0.1.
+Both are used in different settings.
+
+\paragraph*{Number of Repetitions}
+Every experiment must be repeated several times to ensure the statistical significance of the results. In our case, the value $k$ (the number of MUB states, Half-MUB states, or random vectors) fits this role well.
+Performing five experiments with $k=5$ in each one, then generating statistics for the collection of results is equivalent to performing a single experiment with $k=25$.
+I chose to use $k=25$ in all of my experiments.
+
+\subsection{Perliminary Experiments: Setting Hyper-Parameters} \label{subsec:exp_hyperparams}
+
+\paragraph*{Choosing the Tolerance Condition}
+In SciPy, the tolerance condition of all optimizers is defined by a single floating-point parameter named ``tol''. However, its practical meaning is different for every optimizer.
+
+For the COBYLA optimizer, the tol value is a lower bound on the size of the trust region.
+For the Powell optimizer, the tol value becomes (in the words of the SciPy documentation) the relative error in the solution and its function value acceptable for convergence. The documentation gives no further details on the meaning of ``relative error''.
+For the Nelder-Mead optimizer, the tol value has the same definition as the Powell optimizer.
+
+In order to see what tol values are appropriate for every optimizer, I tried each optimizer with three different tol values.
+The task was the same: Solve the trivial VQC example with 3 qubits, 12 layers of the hardware-efficient ansatz, and a success bound of 0.1.
+
+\smallskip
 
 
 \subsection{Experiment 1: Reproducing the Arrasmith Barren Plateau} \label{subsec:recreate}
@@ -498,10 +536,13 @@ In section 4 (Numerical Simulations) of Arrasmith~\cite{arrasmith_effect_2021}, 
 In that section, the trivial VQC problem mentioned in section~\ref{subsec:vqc_bp} is tested for $n=5,\dots,11$ qubits.
 The hyper-parameters were defined as the following:
 \begin{itemize}
-    \item \textbf{Optimizer.} Four different oprimizers were tested: Nelder-Mead, Powell, COBYLA, and Gradient Descent (for reference).
+    \item \textbf{Optimizer.} Four different optimizers were tested: Nelder-Mead, Powell, COBYLA, and Gradient Descent (for reference).
     \item \textbf{Success Bound.} The success bound was defined as a cost value of $C=0.4$.
     \item \textbf{Number of repetitions.} Each experiment was performed $k=20$ times.
 \end{itemize}
+
+\subsection{Synthesis of MUBs in Code}
+
 
 \subsection{Experiment 2: 3 qubits and $n$ layers} \label{subsec:3qubits}
 
