@@ -23,9 +23,7 @@
 \newcommand{\thetas}{\vec{\theta}}
 \newcommand{\del}{\partial}
 \newcommand{\base}{\mathcal{B}}
-% \newcommand{\tvect}[2]{%
-%   \ensuremath{\Bigl(\negthinspace\begin{smallmatrix}#1\\#2\end{smallmatrix}\Bigr)}}
-
+\newcommand{\e}[1]{ 10^{#1}}
 \newcommand{\tvect}[2]{{#1 \choose #2}}
 
 \DeclareMathOperator{\tr}{Tr}
@@ -501,7 +499,18 @@ The same optimization problem can be solved by different optimizers.
 The optimizers that I used in my experiments are the gradient-free optimizers COBYLA and Powell.
 
 \paragraph*{Tolerance Condition}
-\mytodo{merge with content on your macbook.}
+Every optimizer has certain halting conditions.
+For example, an upper bound on the number of optimization iterations can be defined.
+To allow for long optimization times, I did not place a max-iteration limit.
+
+Another halting condition is the tolerance condition.
+It is a condition that defines a minimal tolerance for differences in the optimization.
+For example, an optimizer can require a minimum difference between two different iterations' cost values.
+Another example is a lower bound for parameters that usually decrease in the optimization procedure, such as the trust region in COBYLA.
+
+In general, a tolerance condition is defined as a floating point number.
+Different optimizers give different meaning to the tolerance value.
+I chose 4 different values to experiment with: $2 \times \e{-1}$, $\e{-2}$, $\e{-5}$, and $\e{-12}$. They are used in different settings.
 
 \paragraph*{Success Bound}
 Another possible halting condition for an optimizer is a manual limit.
