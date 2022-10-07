@@ -1,0 +1,17 @@
+===Results for COBYLA===
+stats for n=4
+average nfev: 470.8
+amount of experiments that reached 0.4 is 25/25.
+amount of experiments that reached 0.1 is 25/25.
+stats for n=5
+average nfev: 994.88
+amount of experiments that reached 0.4 is 25/25.
+amount of experiments that reached 0.1 is 24/25.
+stats for n=6
+average nfev: 6984.6
+amount of experiments that reached 0.4 is 25/25.
+amount of experiments that reached 0.1 is 0/25.
+stats for n=7
+avg nfev: 14062.4
+amount of experiments that reached 0.4 is 25/25.
+amount of experiments that reached 0.1 is 10/25.
