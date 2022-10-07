@@ -6,6 +6,7 @@
 \usepackage{braket}
 \usepackage{amsmath} 
 \usepackage{amssymb}
+\usepackage{caption}
 \usepackage[headings]{fancyhdr}
 \graphicspath{ {./Figures/} }
 \usepackage[sorting=none]{biblatex}
@@ -28,10 +29,19 @@
 
 \DeclareMathOperator{\tr}{Tr}
 \DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\tol}{tol}
 
 \newtheorem{definition}{Definition}
 \newtheorem{theorem}{Theorem}
 
+
+\newenvironment{denseitemize}%
+  {\begin{itemize}%
+    \setlength{\itemsep}{0pt}}%
+  {\end{itemize}}
+
+% \let\OLDenumerate\enumerate
+% \renewcommand\enumerate{\OLDenumerate\addtolength{\itemsep}{0.1pt}}
 
 
 \title{Mutual Unbiased Bases as a Countermeasure to Barren Plateaus in Variational Quantum Algorithms}
@@ -51,7 +61,7 @@
 Noisy, Intermediate-Scale Quantum (NISQ) computers are quantum computers that are limited in certain ways. They are usually limited in the number of qubits, connectivity between qubits, noise, and maximal circuit depth.
 A computational paradigm that utilizes NISQ devices is the paradigm of hybrid quantum-classical algorithms.
 Most hybrid algorithms translate a given problem into an optimization problem.
-The parameters of the optimization problem control some parametrized quantum state, the problem's cost function is evaluated on the quantum computer, and the optimization steps are performed by the classical computer. These algorithms are called Variational Quantum Algorithms (VQAs)~\cite{Cerezo2021}. \mytodo{Make sure this is accurate!}
+The parameters of the optimization problem control a parametrized quantum circuit, the problem's cost function is evaluated on the quantum computer, and the optimization steps are performed by the classical computer. The power of such translations is that the cost function can be efficiently calculated only on a quantum computer. These algorithms are called Variational Quantum Algorithms (VQAs)~\cite{Cerezo2021}.
 
 While being a leading methodology for the use of quantum computers today, VQAs suffer from several problems. One such problem is the problem of Barren Plateaus~\cite{mcclean_barren_2018}. Informally, barren plateaus imply that over the optimization parameter space, the gradient of the cost function is negligibly small and the optimization process does not how to converge.
 
@@ -233,6 +243,7 @@ When considering a cost function with 2 parameters, this definition coincides wi
 
 \begin{figure}[h]
     \centering
+    \captionsetup{justification=centering, margin=1cm}
     \includegraphics[scale=0.5]{bp_3d.png}
     \caption{A barren plateau in an inverted bi-variate Gaussian with a small variance.}
     \label{fig:bp}
@@ -274,12 +285,12 @@ Thus, we are trying to optimize the parameters of a parametric quantum circuit $
 
 The quantum circuit used is a layered hardware-efficient ansatz.
 Each layer is defined by the following structure:
-\begin{itemize}
+\begin{denseitemize}
     \item A general unitary single-qubit rotation gate $U(\theta_1, \theta_2, \theta_3)$ gate is applied to each qubit.
     \item A layer of Control-NOT gates is applied between even pairs of qubits (that is, even indices act as controls and odd indices act as targets).
     \item Another layer of general unitary single-qubit rotations is applied.
     \item A layer of Control-NOT gates is applied between odd pairs of qubits (odd indices act as controls and even indices act as targets).
-\end{itemize}
+\end{denseitemize}
 A sketch of a single layer of the circuit can be seen in Figure~\ref{fig:layer}.
 
 The cost function used is the local VQC cost function, as shown in Eq. (\ref{eqn:local_vqc_cost}).
@@ -287,6 +298,7 @@ Arrasmith~\cite{arrasmith_effect_2021} claims that when the number of layers sca
 
 \begin{figure}[h]
     \centering
+    \captionsetup{justification=centering, margin=1cm}
     \includegraphics{arrasmith_layer.png}
     \caption{A single layer of the hardware-efficient ansatz used in the project, as designed in Qiskit.}
     \label{fig:layer}
@@ -419,7 +431,7 @@ If our target is a state $\ket{\psi^*}$, it could lie outside the subset $\{U(\t
 \medskip
 The question that remains is how \emph{exactly} to use the set of MUB states.
 
-\subsection{Using All MUB states}
+\subsection{Using All MUB states} \label{meth:all_mub}
 The most trivial idea is to attempt optimization from all possible MUB states.
 That is, set a specific random initial parameter vector $\thetas_0$, and run a separate experiment with every MUB state as the initial state.
 
@@ -427,18 +439,18 @@ However, there is a major drawback to this method.
 For $n$ qubits, there are $2^n+1$ different MUBs, with $2^n$ states each.
 Thus, this requires performing $O(4^n)$ experiments for every instance of the problem, which is non-scalable for reasonable problem sizes.
 
-\subsection{Sampling $k$ MUB states}
+\subsection{Sampling $k$ MUB states} \label{meth:k_mub}
 A way to mitigate the drawback I just mentioned is to randomly sample a small number of MUB states from the entire set and only run experiments from them.
 
 This will allow an arbitrary amount of experiments, which we can control.
-In addition, as will be discussed in section~\ref{subsec:random_thetas}, this serves as an interesting benchmark to compare against na{\"i}ve methods.
+In addition, as will be discussed in section~\ref{meth:random_thetas}, this serves as an interesting benchmark to compare against na{\"i}ve methods.
 
 However, as mentioned in subsection~\ref{subsec:mub_gen}, the cost of calculation of the MUBs and their states is still exponential in time. Although the work of MUB calculation only needs to happen once and can be considered pre-processing, this makes the current suggestion unfeasible, for example, for $n>60$ qubits.
 
 In addition, although the work of~\cite{bandyopadhyay_new_2002} shows a theoretical construction for the MUB sets for $n$ qubits, it is difficult to implement in practice.
 Thus, Tal and I faced an interesting question: what can be done, for $n$ qubits, with only the MUB states for 2 and 3 qubits?
 
-\subsection{``Half-MUB'' states}
+\subsection{``Half-MUB'' states} \label{meth:half_mub}
 We came up with a relatively simple idea: given an $n$-qubit register, pick 2 or 3 qubits. Generate a MUB state between the chosen qubits, and keep the rest in the 0 state.
 
 The amount of such states for $n$ qubits is polynomial. There are ${n \choose 3} = O(n^3)$ triplets for the qubit choices, and each one has a constant amount of MUB state options.
@@ -457,42 +469,48 @@ Non-Uniformity still applies: a uniform choice of parameter values for the ansat
 Because of that, the prepending of the MUB generation circuit to the ansatz could move it dramatically closer to the target unitary (in terms of the parameter space).
 Non-expressivity applies in a similar fashion.
 
-\section{Experiments}
-In this section, I will detail the experiments that I implemented in this project.
+\section{Experiments} \label{sec:experiments}
+In this section, I will detail the experiments that I implemented in the project.
 
-Section~\ref{subsec:random_thetas} explains the control group to which I compare each idea.
+Section~\ref{meth:random_thetas} explains the control group to which I compare each idea.
 
-Section~\ref{subsec:hyperparams} details the hyper-parameters of every experiment.
+Section~\ref{subsec:hyperparams} details the hyper-parameters of the experiments.
 
-Section~\ref{subsec:exp_hyperparams} details the experiments used for picking hyper-parameters.
+Section~\ref{subsec:exp_hyperparams} details the experiments used for choosing hyper-parameters.
 
-Section~\ref{subsec:recreate} shows a recreation of the barren plateau simulation presented in of~\cite{arrasmith_effect_2021}.
+Section~\ref{subsec:reproduce} shows a reproduction of the barren plateau simulation presented in \cite{arrasmith_effect_2021}.
 
-Section~\ref{subsec:mub_gen} details the synthesis of MUB-generating circuits.
+Section~\ref{subsec:mub_synthesis} details the synthesis of MUB-generating circuits.
 
 Section~\ref{subsec:3qubits} shows experiments on 3 qubits and $k$ random MUB states.
 
 Section~\ref{subsec:nqubits} shows experiments on higher numbers of qubits and $k$ half-MUB states.
 
 All experiments were implemented in Python, and can be found on GitHub under the link \url{https://github.com/ittay-alfassi/barren-plateaus}.
+The repository in the link contains the code for the experiments and their analysis, raw data generated by the experiments, convergence graphs for every experiment, and intermediate documents for future ideas.
+Throughout the section, references to specific folders and sections in the code will be given for each experiment and its results.
+
 MUB circuit synthesis was done using the Qsymm~\cite{qsymm} and BQSkit~\cite{bqskit} packages.
 The construction and execution of quantum circuits was done using the Qiskit~\cite{qiskit} package.
-The optimizers were taken from the SciPy package~\cite{scipy}.
+The optimizers were taken from the SciPy~\cite{scipy} package.
 
-\subsection{Control Group: Random Initialization Vectors} \label{subsec:random_thetas}
+\subsection{Control Group: Random Initialization Vectors} \label{meth:random_thetas}
 A critical step that we must take before testing the use of MUBs is a na{\"i}ve equivalent.
-A reasonable equivalent to using $k$ different MUB (or half-MUB) states and a single initial vector is to run $k$ experiments with no MUB states involved --- just use a different random initial vector for each experiment.
+A reasonable equivalent to using $k$ different MUB (or half-MUB) states and a single initial vector is to run $k$ experiments with no MUB states involved --- just \textbf{use a different random initial vector for each experiment}.
 
 Note that if our ansatz is expressive (assumption \ref{itm:expressive} in section \ref{sec:mub_use}), another interesting comparison can be made.
 
 As shown in section~\ref{sec:mub_use}, if an ansatz is expressive, every MUB state $\ket{\alpha}$ can be described as $U(\thetas^\alpha)\ket{\vec{0}}$ for some parameter vector $\thetas^\alpha$.
-Thus, the comparison between $k$ MUB states and $k$ random initial vectors is equivalent to a comparison between a carefully chosen set of starting parameters $\{\thetas^{\alpha} | \ket{\alpha} \textrm{ is a MUB state}\}$ and a random set of starting parameters $\{\thetas_0^i | \forall i, \thetas_{0}^{i} \in [-\pi, \pi)^m\}$.
+Thus, the comparison between $k$ MUB states and $k$ random initial vectors can be seen as a comparison between a carefully chosen set of starting parameters $\{\thetas^{\alpha} | \ket{\alpha} \textrm{ is a MUB state}\}$ and a random set of starting parameters $\{\thetas_0^i | \forall i, \thetas_{0}^{i} \in [-\pi, \pi)^m\}$.
 
 \subsection{Experiment Hyper-Parameters} \label{subsec:hyperparams}
 Every VQA experiment has, besides of the initial state and the given problem, other parameters that affect its execution.
 These parameters are often called hyper-parameters (to separate them from the parameter vector of the ansatz and optimizer).
 These hyper-parameters can have a deep impact on the result of the experiment.
 Thus, it is important to list them and explain the choice of every hyper-parameter.
+
+I will now list the hyper-parameters and their chosen values.
+The experiments I used to choose these values are detailed in the next subsection.
 
 \paragraph*{Optimizer}
 The same optimization problem can be solved by different optimizers.
@@ -503,22 +521,25 @@ Every optimizer has certain halting conditions.
 For example, an upper bound on the number of optimization iterations can be defined.
 To allow for long optimization times, I did not place a max-iteration limit.
 
-Another halting condition is the tolerance condition.
+Another halting condition is the tolerance condition, often nicknamed ``tol''.
 It is a condition that defines a minimal tolerance for differences in the optimization.
 For example, an optimizer can require a minimum difference between two different iterations' cost values.
-Another example is a lower bound for parameters that usually decrease in the optimization procedure, such as the trust region in COBYLA.
-
 In general, a tolerance condition is defined as a floating point number.
-Different optimizers give different meaning to the tolerance value.
-I chose 4 different values to experiment with: $2 \times \e{-1}$, $\e{-2}$, $\e{-5}$, and $\e{-12}$. They are used in different settings.
+For the COBYLA optimizer, the tol value is a lower bound on the size of the trust region.
+For the Powell optimizer, the tol value becomes (in the words of the SciPy documentation) ``the relative error in the solution and its function value acceptable for convergence.'' The documentation gives no further details on the meaning of ``relative error''.
+For the Nelder-Mead optimizer, the tol value has the same definition as the Powell optimizer.
+The evidence that this is the meaning of the tol value for each optimizer was taken directly from the source code and in-code documentation of SciPy.
+It can be found in the following link: \url{https://github.com/scipy/scipy/blob/main/scipy/optimize/_minimize.py}. The tolerances assignment can be found around line 600.\footnote{Who said Reverse Engineering isn't important for quantum scientists? :)}
+
+I chose 4 different values to experiment with: $2 \times \e{-1}$, $\e{-2}$, $\e{-5}$, and $\e{-12}$. They are used in different settings, as specified in the rest of the section.
 
 \paragraph*{Success Bound}
-Another possible halting condition for an optimizer is a manual limit.
+Another possible halting condition for an optimizer is a manual limit for the cost function's value.
 For example, in the numerical simulations of Arrasmith~\cite{arrasmith_effect_2021}, they stopped the optimization process once the cost function's value reached $C=0.4$.
 I call these values ``success bounds'', as they present a lower bound for the function's value, such that reaching it (or below it) counts as a success of the optimization procedure. Specifically, it signifies that we succeeded in overcoming the barren plateaus.
 
 In my experiments, I define two different success bounds: 0.4 and 0.1.
-Both are used in different settings.
+Both are used in different settings, as specified in the rest of the section.
 
 \paragraph*{Number of Repetitions}
 Every experiment must be repeated several times to ensure the statistical significance of the results. In our case, the value $k$ (the number of MUB states, Half-MUB states, or random vectors) fits this role well.
@@ -527,39 +548,258 @@ I chose to use $k=25$ in all of my experiments.
 
 \subsection{Perliminary Experiments: Setting Hyper-Parameters} \label{subsec:exp_hyperparams}
 
-\paragraph*{Choosing the Tolerance Condition}
-In SciPy, the tolerance condition of all optimizers is defined by a single floating-point parameter named ``tol''. However, its practical meaning is different for every optimizer.
+\paragraph*{Choosing the Tolerance Condition}~\\
+In SciPy, the tolerance condition of all optimizers is defined by a single floating-point parameter named ``tol''. However, its practical meaning is different for every optimizer, as specified in the previous subsection.
 
-For the COBYLA optimizer, the tol value is a lower bound on the size of the trust region.
-For the Powell optimizer, the tol value becomes (in the words of the SciPy documentation) the relative error in the solution and its function value acceptable for convergence. The documentation gives no further details on the meaning of ``relative error''.
-For the Nelder-Mead optimizer, the tol value has the same definition as the Powell optimizer.
-
-In order to see what tol values are appropriate for every optimizer, I tried each optimizer with three different tol values.
+In order to see what tol values are appropriate for every optimizer, I tried each optimizer with four different tol values.
 The task was the same: Solve the trivial VQC example with 3 qubits, 12 layers of the hardware-efficient ansatz, and a success bound of 0.1.
 
-\smallskip
+\paragraph*{Results.}
+The results are summarized in Table \ref{tbl:tol_results}.
 
+\begin{table}[] 
+    \centering
+    \begin{tabular}{|c|c|c|c|}
+        \hline
+        tol & COBYLA & Powell & Nelder-Mead \\ \hline
+        $2 \times 10^{-1}$ & \begin{tabular}[c]{@{}c@{}}25/25 success\\ avg nfev 137.92\end{tabular} & \begin{tabular}[c]{@{}c@{}}25/25 success\\ avg nfev 211.36\end{tabular} & \begin{tabular}[c]{@{}c@{}}0/25 success\\ avg nfev 217\end{tabular} \\ \hline
+        $10^{-2}$ & \begin{tabular}[c]{@{}c@{}}25/25 success\\ avg nfev 129.88\end{tabular} & \begin{tabular}[c]{@{}c@{}}25/25 success\\ avg nfev 295.52\end{tabular} & \begin{tabular}[c]{@{}c@{}}25/25 success\\ avg nfev 4302.32\end{tabular} \\ \hline
+        $10^{-5}$ & \begin{tabular}[c]{@{}c@{}}25/25 success\\ avg nfev 139.6\end{tabular} & \begin{tabular}[c]{@{}c@{}}25/25 success\\ avg nfev 623.84\end{tabular} & N/A \\ \hline
+        $10^{-12}$ & \begin{tabular}[c]{@{}c@{}}25/25 success\\ avg nfev 131.24\end{tabular} & \begin{tabular}[c]{@{}c@{}}25/25 success\\ avg nfev 928.64\end{tabular} & N/A \\ \hline
+    \end{tabular}
+    \caption{The number of successful experiments and average Number of Function EVals (nfev) for different optimizers and tol values.}
+    \label{tbl:tol_results}
+\end{table}
+COBYLA acted similarly for all tested tolerance values.
+I also tested the special case of $\tol=0$ for COBYLA. It caused an interesting bug. Because no lower bound was specified for the error, the COBYLA optimization process crashed by inputting $\infty$ and $-\infty$ into the parameter vector (seemingly at random).
 
-\subsection{Experiment 1: Reproducing the Arrasmith Barren Plateau} \label{subsec:recreate}
+Powell showed reasonable scaling for all tested tolerance values.
+
+Nelder-Mead managed to terminate with $\tol=2 \times \e{-1}$ but failed to reach the correct solutions.
+With $\tol=\e{-2}$, Nelder-Mead took approximately 20 times longer than with the previous value.
+With $\tol=\e{-5}$, Nelder-Mead took over 1 hour and could not finish a single experiment. For comparison, a COBYLA run took around 20 seconds.
+For this reason, I did not test with $\e{-12}$ either.
+
+My conclusion is that COBYLA and Powell are usable with any tol value, but Nelder-Mead is only usable (and barely so) with $\tol=\e{-2}$.
+Thus, the value that I chose for tol is $\e{-5}$. This value that is low enough to not stop convergence in extreme situations, but probably not so low as to waste time on fruitless runs.
+The code for the experiments in this paragraph can be found under the section ``Hyper-Parameter Experiments: Choosing TOL'' in the notebook ``bps.ipynb''.
+% The result data can be found under ``VQC results/tol\_experiments.txt''.
+
+\paragraph*{Choosing the right optimizer}~\\
+After choosing reasonable tol values from the results of the previous experiment, I tested the three possible optimizers (COBYLA, Powell and Nelder-Mead) with the same VQC problem, with a changing number of qubits:
+From 4 qubits and 4 layers to 7 qubits and 7 layers.
+
+\paragraph*{Results.}
+The success percentages of the optimizers, both for $C=0.4$ and for $C=0.1$ are summarized in Table\mytodo{Add table.}. The average nfevs of the optimizers are shown in Figure \mytodo{Add figure!}.
+
+\mytodo{Modify the details according to the actual results.}
+Both COBYLA and Powell managed to perform well on 4-7 qubits.
+Nelder-Mead took more time to finish 4 qubits than all the COBYLA experiments. Thus, it was neglected for the rest of the experiments.
+
+Between COBYLA and Powell, COBYLA took less time to finish the optimization in most cases. Thus, I chose COBYLA for the rest of the experiments.
+The code for the experiments in this paragraph can be found under the section ``Hyper-Parameter Experiments: Choosing the Optimizer'' in the notebook ``bps.ipynb''.
+
+\subsection{Experiment Set 1: Reproducing the Arrasmith Barren Plateau} \label{subsec:reproduce}
 In section 4 (Numerical Simulations) of Arrasmith~\cite{arrasmith_effect_2021}, a numerical demonstration of the barren plateaus in the VQC problem.
 In that section, the trivial VQC problem mentioned in section~\ref{subsec:vqc_bp} is tested for $n=5,\dots,11$ qubits.
 The hyper-parameters were defined as the following:
-\begin{itemize}
+\begin{denseitemize}
     \item \textbf{Optimizer.} Four different optimizers were tested: Nelder-Mead, Powell, COBYLA, and Gradient Descent (for reference).
-    \item \textbf{Success Bound.} The success bound was defined as a cost value of $C=0.4$.
+    \item \textbf{Success bound.} The success bound was defined as a cost value of $C=0.4$.
     \item \textbf{Number of repetitions.} Each experiment was performed $k=20$ times.
-\end{itemize}
+\end{denseitemize}
+The tolerance condition was not specified.\\
 
-\subsection{Synthesis of MUBs in Code}
+In my recreation, I used the following parameters:
+
+\begin{denseitemize}
+    \item \textbf{Number of qubits.} I used $n=4$ to $n=9$ qubits.
+    \item \textbf{Number of layers.} I used linear scaling of layers --- $n$ layers with $n$ qubits.
+    \item \textbf{Optimizer.} As discussed, I used the COBYLA optimizer.
+    \item \textbf{Tolerance condition.} As discussed, I used $\tol=\e{-5}$.
+    \item \textbf{Success bound.} I used a terminating success bound of $0.1$, with another line specifying the cost value of $0.4$, as an additional point for comparison.
+    \item \textbf{$k$.} I used $k=25$ repetitions for each method.
+\end{denseitemize}
+
+\paragraph*{Results.}
+The graph of the average nfev as a function of the number of qubits is given in figure \mytodo{Add a figure!}, with an exponential scale.
+The success rates of each number of qubits is given in table \mytodo{Add a table!}.
+
+Thus, in the values that we were able to calculate, we can see that an exponential barren plateau appears, partially recreating the graph in Section 4 of Arrasmith~\cite{arrasmith_effect_2021}.
+
+The code for the experiments in this subsection can be found in the section ``Experiment Set \#1: Barren Plateau Reproduction'' in the notebook ``bps.ipynb''.
+Convergence graphs for each one of the experiments can be found in the ``VQC results/local cost barren plateaus'' subfolder. A text file with statistics and all evaluations can be found in the same folder, and used for the generation of future statistics.
+
+\subsection{Synthesis of MUBs in Code} \label{subsec:mub_synthesis}
+The process of calculating the sets of MUBs for 2 and 3 qubits was straightforward.
+The first step was to copy the rows of the tables in figures 2 and 3 of \cite{lawrence_mutually_2002} into the code.
+Recall that each row defined a MUB: the MUB is the eigenbasis of the Pauli strings in that row.
+However, the paper notes that ``particular subsets of three determine the corresponding basis sets completely''.
+Thus, in the 3-qubit case, I only copied the strings from the first three columns of the table to the code.
+
+After that, I used the Qiskit module to write out each Pauli String as a matrix and used the Qsymm module to simultaneously diagonalize the rows of matrices.
+
+At this point, The code has generated the state vectors that correspond to each MUB state. However, we wish to generate them through a circuit.
+Note that If we treat the collection of state vectors in a MUB as a matrix, we get a unitary matrix with the following property:
+If we apply the matrix to a computational state $\ket{i}$, we get the i'th state of the MUB as the output.
+If we synthesize a circuit that implements this unitary, we can use it to generate every MUB state from the specific MUB.
+
+Thus, for each MUB, I used the BQSkit module to synthesize a circuit that corresponds to the MUB's unitary matrix.
+The synthesized results are written in OpenQASM 2.0.
+These circuits are saved as qasm files in a folder, to be used in the following experiments.
+
+The code for the MUB circuit synthesis is in the notebook ``mub\_generation.ipynb''.
+The MUB circuits can be found under the folder ``mub\_bqskit''.
+The circuits for two qubits are under the subfolder ``2\_302''. The circuits for three qubits are under the subfolder ``3\_306''.
 
 
-\subsection{Experiment 2: 3 qubits and $n$ layers} \label{subsec:3qubits}
+\subsection{Experiment Set 2: 3 qubits and $n$ layers} \label{subsec:3qubits}
+The following experiment is the first example of a practical comparison between MUB-based experiments and non-MUB based experiments.
 
-\subsection{Experiment 3: $n$ qubits and $n$ layers} \label{subsec:nqubits}
+Parameters and hyper-parameters were defined as the following:
+\begin{denseitemize}
+    \item \textbf{Utilization Method.} I am using the method of ``Sampling $k$ MUB states'', described in section~\ref{meth:k_mub}. It is compared to the control group of random initial vectors from section~\ref{meth:random_thetas}.
+    \item \textbf{Number of qubits.} I used $n=3$ qubits.
+    \item \textbf{Number of layers.} I used 12 layers of the hardware-efficient ansatz.
+    \item \textbf{Optimizer.} As discussed, I used the COBYLA optimizer.
+    \item \textbf{Tolerance condition.} As discussed, I used $\e{-5}$.
+    \item \textbf{Success bound.} I used a terminating success bound of $0.1$, with another line specifying the cost value of $0.4$, as an additional point for comparison.
+    \item \textbf{$k$.} I used $k=25$ repetitions for each method.
+\end{denseitemize}
+
+\paragraph*{Results.}
+The results are presented in Figure~\ref{fig:3qubits}.
+
+\begin{figure}[]
+    \centering
+    \captionsetup{justification=centering, margin=1cm}
+    \includegraphics[scale=0.8]{3qubits.png}
+    \caption{A scatter plot of the results of Experiment 2. The x-axis shows the nfevs of each experiment, and the y-axis shows the value at which the optimization halted.}
+    \label{fig:3qubits}
+\end{figure}
+
+As shown in the scatter plot, the control group and the MUB-based experiments behaved similarly, with no clear advantage.
+All runs (Control Group and MUB-based) managed to reach the $C=0.1$ success bound\footnote{Experiments that finished below the 0.1 cost value reached it in one iteration. That is, the before-last evaluation had a value above 0.1, and the last iteration had the value that is shown in the plot}.
+The average nfev of the Control Group was 124.72.
+The average nfev of the MUB-based experiments was 145.16.
+In addition, the lowest and highest nfev counts are similar in both cases.
+
+Thus, my conclusion is that with 3 qubits, there is no advantage to using MUB states as initial states over random initial parameter vectors.
+
+The code for the experiments in this subsection can be found in the section ``Experiment Set \#2: 3 qubits, 12 layers'' in the notebook ``bps.ipynb''.
+Convergence graphs for each one of the experiments can be found in the ``VQC results/local cost 3 qubits'' subfolder. A text file with statistics and all evaluations can be found in the same folder, and used for the generation of future statistics.
+
+
+
+\subsection{Experiment Set 3: $n$ qubits and $n$ layers} \label{subsec:nqubits}
+As the last experiment showed no promise from the use of MUBs in 3 qubits, the next reasonable idea to explore is a higher number of qubits.
+
+Parameters and hyper-parameters were defined as the following:
+\begin{denseitemize}
+    \item \textbf{Utilization Method.} I am using the method of ``Sampling Half-MUB states'', using 3-qubit MUB sets, described in section~\ref{meth:half_mub}. It is compared to the control group of random initial vectors from section~\ref{meth:random_thetas}.
+    \item \textbf{Number of qubits.} As I showed in the optimizer hyper-parameter experiment in \ref{subsec:exp_hyperparams}, experiments started taking a considerable amount of time when the number of qubits reached 7.
+    Thus, I chose to perform the high-qubit-number experiments with $n=7$ qubits.
+    \item \textbf{Number of layers.} I used 7 layers of the hardware-efficient ansatz. The reason is twofold: The barren plateaus appear with linear scaling of layers with the number of qubits, and the number of parameters stays similar to experiment 2.
+    3 qubits $\times$ 12 layers = 48 $\approx$ 49 = 7 qubits $\times$ 7 layers.
+    \item \textbf{Optimizer.} As discussed, I used the COBYLA optimizer.
+    \item \textbf{Tolerance condition.} As discussed, I used $\e{-5}$.
+    \item \textbf{Success bound.} I used a terminating success bound of $0.1$, with another line specifying the cost value of $0.4$, as an additional point for comparison.
+    \item \textbf{$k$.} I used $k=25$ repetitions for each method.
+\end{denseitemize}
+
+\paragraph*{Results.}
+The results are presented in Figure~\ref{fig:7qubits}.
+
+\begin{figure}[]
+    \centering
+    \captionsetup{justification=centering, margin=1cm}
+    \includegraphics[scale=0.8]{7qubits.png}
+    \caption{A scatter plot of the results of Experiment 2. The x-axis shows the nfevs of each experiment, and the y-axis shows the value at which the optimization halted.}
+    \label{fig:7qubits}
+\end{figure}
+
+One outlier from the control group was removed, as it had more than 175000 nfevs (and, of course, failed).
+As shown in the scatter plot, the control group and the Half-MUB-based experiments behaved similarly, with no clear advantage.
+Although the control group had more outliers in terms of final values and nfevs, they can be dismissed as statistical anomalies.
+
+As the plot is unclear near the $0.1$ mark, I will write out the results there: 10/25 of the control group reached $C=0.1$, and only 7/25 of the half-MUB experiments reached $C=0.1$.
+
+Thus, my conclusion is that even with more than 3 qubits, there is no advantage to using Half-MUB states as initial states over random initial parameter vectors.
+
+The code for the experiments in this subsection can be found in the section ``Experiment Set \#3: 7 qubits, 7 layers'' in the notebook ``bps.ipynb''.
+Convergence graphs for each one of the experiments can be found in the ``VQC results/local cost 7 qubits'' subfolder. A text file with statistics and all evaluations can be found in the same folder, and used for the generation of future statistics.
+
+The same method was also implemented with 2-qubit MUB states.
+The required functions for its execution are in the notebook, beside the functions for the 3-qubit MUB states.
+
 
 \section{Discussion}
+In this project, I have studied many different aspects of Optimization, Near-Term Quantum Computing, and Quantum Information.
+Tal and I tried to apply this knowledge to try and mitigate the challenge of Barren Plateaus. Unfortunately, we did not succeed. However, I believe that this idea does not end here.
+There are more experiments to be made, and there are more methods to try to fully explore this idea.
+Many experimental choices were made ``Ad-Hoc'' and due to intuition --- perhaps doubling back and trying different hyper-parameter choices could lead to interesting conclusions.
+I will discuss ideas for future work in the following section.
 
 \section{Future Work}
+I will now list the ideas for the continuation of this work that I could not implement myself, either due to lack of time or due to lack of specific expertise.
+
+\paragraph*{Concentration of Measure.}
+As mentioned in Section~\ref{sec:mub_use}, the Non-Uniformity of state spaces is connected to the definition of the Haar Measure and to the concentration of measure.
+These subjects belong to the field of Measure Theory.
+While I do not have mathematical expertise in Measure Theory, understanding the mathematical implications of these subjects on our method could be critical in two different ways: Either supply some information or constraints to our method in order to assure its advantage or show formally that it cannot give any advantage.
+
+\paragraph*{Trying Different Hyper-Parameters.}
+In Section~\ref{sec:experiments}, I made certain choices regarding hyper-parameters out of intuition or lack of time.
+Examples of such choices are the values of the tolerance condition, success bound, and even the optimizer (the removal of Nelder-Mead as a candidate).
+It is possible that by making these choices, I have missed some important factor.
+For example, it may be that if I checked more (and higher) success bounds, a clearer distinction between MUB and non-MUB experiments could be made --- both with lower success bounds in the 3 qubit case and with higher success bounds in the 7 qubit case.
+
+\paragraph*{More Repetitions.}
+While doing 25 repetitions of each experiment took a long time, it is not a parameter for completeness.
+There are MUB sets with 9 MUBs for 3-qubit systems, and each one of them contains 8 states, which brings a total of 72 states.
+This means, as a matter of fact, we explored around a third of all MUB states in Experiment 2.
+In Experiment 3, the gap is even more apparent: there are ${7 \choose 3} = 35$ choices for triplets in 7 qubits, which brings a total of $35 \times 72 = 2520$ initial states.
+
+Testing with much more repetitions might reveal that the results we got in Experiments 2 and 3 are no more than a statistical ``fluke'' and that our method is successful in the general case.
+
+\paragraph*{Full MUBs for Higher Qubit Counts.}
+In this project, I used the examples in Lawrence~\cite{lawrence_mutually_2002} to calculate MUB sets for 2 and 3 qubits. However, there is no real reason to stop there: The work in~\cite{bandyopadhyay_new_2002} shows a construction for MUB sets for any number of qubits.
+It might be the case that although Half-MUBs do not give an advantage with many qubits, and full MUB states do not give an advantage with 3 qubits, full MUB states with many qubits could provide a real advantage over random parameter choices.
+Thus, putting a concentrated effort into the generation of MUB sets for $N$ qubits could be an important direction for this method.
+
+\paragraph*{Other VQAs.}
+While the Arrasmith paper~\cite{arrasmith_effect_2021} focused on the VQC problem, there is no reason to only explore this specific problem.
+Other problems were explored in the context of barren plateaus, such as VQE in the original McClean paper~\cite{mcclean_barren_2018}, and the use of quantum auto-encoders in~\cite{cerezo_cost_2021}.
+I tried to apply the presented ideas to VQE in this project, but the matter was left outside of scope due to time considerations. This application could have a deeper intuitive meaning, as described at the start of Section~\ref{sec:mub_use}, because the goal of the method is to reach a state (and not a transformation).
+An initial sketch of how to use MUBs for Subspace VQE \cite{nakanishi_subspace-search_2019} can be found in the document ``Tal's SSVQE idea'' under the ``goals and ideas'' folder.
+
+\paragraph*{Novel Optimization Methods.}
+% Usually, the optimizers in VQAs work in the following manner:
+% \begin{enumerate}
+%     \item Start with a parametrized circuit (which spans the entire space), and a \emph{random} initial guess of parameters $\thetas_0$.
+%     \item Run the circuit, and get an initial cost evaluation (based on$\thetas_0$).
+%     \item Use an optimizer to calculate the new parameters: $\thetas_1$.
+%     \item Repeat until convergence of the optimizer.
+% \end{enumerate}
+
+% Tal and I considered a different idea, which uses the cost function value at \emph{multiple, different locations} as part of this optimization. Using this kind of optimizer, we could use the following method:
+% \begin{enumerate}
+%     \item 	Start with a parametrized circuit (which spans the entire space), and a \emph{random} initial guess of parameters $\thetas_0$.
+%     \item Run the circuit and get an initial cost evaluation (based on$\thetas_0$).
+%     \item Now consider the same parametrized circuit, and a \emph{random} iniital guess of parameters $\thetas_1$.
+%     \item Run the circuit and get an initial cost evaluation (based on$\thetas_1$).
+%     \item Use a special optimizer, 	that takes the TWO evaluations, to calculate the new parameter: $\thetas_2$.
+%     \item Repeat until convergence of the optimizer, using multiple values for $\thetas$. Either use ALL thetas (the optimizer needs to be able to work on a variable amount of cost function evaluations), or use the last/best two thetas to calculate the next one (a-la-momentum GD).
+% \end{enumerate}
+All of the optimizers we considered in our project worked in a relatively standard way: they consider a single point in parameter space $\thetas_i$ and use it to find the next point $\thetas_{i+1}$. An interesting idea would be to use a different kind of optimizer: One that uses \emph{multiple} points in the parameter space in order to find the next point of interest. For example, an optimizer that calculates the next step from $k$ points in the parameter space could start with all MUB states as initial points.
+
+While multi-point optimizers exist (such as Momentum Gradient Descent), we could not find one that is fit for our idea.
+Finding (or perhaps constructing) such an optimizer could use the important data that MUB states contain in a more meaningful and effective way.
+
+
+More details can be found in the document ``Tal's optimization idea.docx'' under the ``goals and ideas'' subfolder.
+
+
 
 \printbibliography
 \end{document}
