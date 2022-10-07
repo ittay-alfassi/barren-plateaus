@@ -63,7 +63,7 @@ A computational paradigm that utilizes NISQ devices is the paradigm of hybrid qu
 Most hybrid algorithms translate a given problem into an optimization problem.
 The parameters of the optimization problem control a parametrized quantum circuit, the problem's cost function is evaluated on the quantum computer, and the optimization steps are performed by the classical computer. The power of such translations is that the cost function can be efficiently calculated only on a quantum computer. These algorithms are called Variational Quantum Algorithms (VQAs)~\cite{Cerezo2021}.
 
-While being a leading methodology for the use of quantum computers today, VQAs suffer from several problems. One such problem is the problem of Barren Plateaus~\cite{mcclean_barren_2018}. Informally, barren plateaus imply that over the optimization parameter space, the gradient of the cost function is negligibly small and the optimization process does not how to converge.
+While being a leading methodology for the use of quantum computers today, VQAs suffer from several problems. One such problem is the problem of Barren Plateaus~\cite{mcclean_barren_2018}. Informally, barren plateaus imply that over the optimization parameter space, the gradient of the cost function is negligibly small and the optimization process does not know how to converge.
 
 This problem affects many  VQAs that employ different types of quantum circuits and classical optimizers (even those that are gradient-free). As the number of qubits and the depth of the quantum circuits increase, this problem worsens exponentially.
 Effectively, this means that VQAs will not be able to give an advantage over their classical counterparts in problems that are not small in size.
@@ -99,7 +99,7 @@ VQAs are comprised of several elements: The quantum circuit, the cost function, 
 
     Ansatzes\footnote{The plural form of ansatz in German is Ansaetze.} can either be problem-specific or problem-agnostic.
 
-    A problem-specific ansatz is tailored to the problem solved by the VQE using a-priori knowledge of the structure of the problem. Through this tailoring, there is a better chance that the circuit can reach values that are optimal for the problem at hand. When using a problem-specific ansatz, the initial state is usually also tailored according to the same information.
+    A problem-specific ansatz is tailored to the problem solved by the VQA using a-priori knowledge of the structure of the problem. Through this tailoring, there is a better chance that the circuit can reach values that are optimal for the problem at hand. When using a problem-specific ansatz, the initial state is usually also tailored according to the same information.
     
     A problem-agnostic ansatz is not tailored to the problem specifically and can be used with no relevant information. It is usually comprised of repeated layers of quantum gates. Each layer is comprised of quantum gates that are usually easy to implement directly on quantum hardware, in contrast to problem-specific ansatzes. Problem-agnostic ansatzes are usually called ``hardware-efficient'' for this reason.
     In this project, I focused on using hardware-efficient ansatzes.
@@ -596,7 +596,7 @@ The success percentages of the optimizers, both for $C=0.4$ and for $C=0.1$ are 
 Both COBYLA and Powell managed to perform well on 4-7 qubits.
 Nelder-Mead took more time to finish 4 qubits than all the COBYLA experiments. Thus, it was neglected for the rest of the experiments.
 
-Between COBYLA and Powell, COBYLA took less time to finish the optimization in most cases. Thus, I chose COBYLA for the rest of the experiments.
+Between COBYLA and Powell, COBYLA took less time to finish the optimization in most cases. Thus, I chose to use COBYLA for the rest of the experiments.
 The code for the experiments in this paragraph can be found under the section ``Hyper-Parameter Experiments: Choosing the Optimizer'' in the notebook ``bps.ipynb''.
 
 \subsection{Experiment Set 1: Reproducing the Arrasmith Barren Plateau} \label{subsec:reproduce}
@@ -628,7 +628,7 @@ The success rates of each number of qubits is given in table \mytodo{Add a table
 Thus, in the values that we were able to calculate, we can see that an exponential barren plateau appears, partially recreating the graph in Section 4 of Arrasmith~\cite{arrasmith_effect_2021}.
 
 The code for the experiments in this subsection can be found in the section ``Experiment Set \#1: Barren Plateau Reproduction'' in the notebook ``bps.ipynb''.
-Convergence graphs for each one of the experiments can be found in the ``VQC results/local cost barren plateaus'' subfolder. A text file with statistics and all evaluations can be found in the same folder, and used for the generation of future statistics.
+Convergence graphs for each one of the experiments can be found in the ``VQC results/local cost barren plateaus'' subfolder. A text file with statistics and all evaluations can be found in the same folder, and used for the generation of future statistics. Details on the structure of the text file can be found in the appendix.
 
 \subsection{Synthesis of MUBs in Code} \label{subsec:mub_synthesis}
 The process of calculating the sets of MUBs for 2 and 3 qubits was straightforward.
@@ -661,22 +661,30 @@ Parameters and hyper-parameters were defined as the following:
     \item \textbf{Utilization Method.} I am using the method of ``Sampling $k$ MUB states'', described in section~\ref{meth:k_mub}. It is compared to the control group of random initial vectors from section~\ref{meth:random_thetas}.
     \item \textbf{Number of qubits.} I used $n=3$ qubits.
     \item \textbf{Number of layers.} I used 12 layers of the hardware-efficient ansatz.
-    \item \textbf{Optimizer.} As discussed, I used the COBYLA optimizer.
+    \item \textbf{Optimizer.} As discussed, I used the COBYLA and POWELL optimizers.
     \item \textbf{Tolerance condition.} As discussed, I used $\e{-5}$.
     \item \textbf{Success bound.} I used a terminating success bound of $0.1$, with another line specifying the cost value of $0.4$, as an additional point for comparison.
     \item \textbf{$k$.} I used $k=25$ repetitions for each method.
 \end{denseitemize}
 
 \paragraph*{Results.}
-The results are presented in Figure~\ref{fig:3qubits}.
-
+% The results are presented in Figures \ref{fig:3qubits_cobyla} and \ref{fig:3qubits_powell}.
+The results are presented in Figure \ref{fig:3qubits_cobyla}.
 \begin{figure}[]
     \centering
     \captionsetup{justification=centering, margin=1cm}
-    \includegraphics[scale=0.8]{3qubits.png}
-    \caption{A scatter plot of the results of Experiment 2. The x-axis shows the nfevs of each experiment, and the y-axis shows the value at which the optimization halted.}
-    \label{fig:3qubits}
+    \includegraphics[scale=0.8]{3qubits_cobyla.png}
+    \caption{A scatter plot of the results of Experiment 2 using COBYLA. The x-axis shows the nfevs of each experiment, and the y-axis shows the value at which the optimization halted.}
+    \label{fig:3qubits_cobyla}
 \end{figure}
+
+% \begin{figure}[]
+%     \centering
+%     \captionsetup{justification=centering, margin=1cm}
+%     \includegraphics[scale=0.8]{3qubits_powell.png}
+%     \caption{A scatter plot of the same experiment set with the Powell optimizer.}
+%     \label{fig:3qubits_powell}
+% \end{figure}
 
 As shown in the scatter plot, the control group and the MUB-based experiments behaved similarly, with no clear advantage.
 All runs (Control Group and MUB-based) managed to reach the $C=0.1$ success bound\footnote{Experiments that finished below the 0.1 cost value reached it in one iteration. That is, the before-last evaluation had a value above 0.1, and the last iteration had the value that is shown in the plot}.
@@ -687,7 +695,7 @@ In addition, the lowest and highest nfev counts are similar in both cases.
 Thus, my conclusion is that with 3 qubits, there is no advantage to using MUB states as initial states over random initial parameter vectors.
 
 The code for the experiments in this subsection can be found in the section ``Experiment Set \#2: 3 qubits, 12 layers'' in the notebook ``bps.ipynb''.
-Convergence graphs for each one of the experiments can be found in the ``VQC results/local cost 3 qubits'' subfolder. A text file with statistics and all evaluations can be found in the same folder, and used for the generation of future statistics.
+Convergence graphs for each one of the experiments can be found in the ``VQC results/local cost 3 qubits'' subfolder. A text file with statistics and all evaluations can be found in the same folder, and used for the generation of future statistics. Details on the structure of the text file can be found in the appendix.
 
 
 
@@ -727,7 +735,7 @@ As the plot is unclear near the $0.1$ mark, I will write out the results there: 
 Thus, my conclusion is that even with more than 3 qubits, there is no advantage to using Half-MUB states as initial states over random initial parameter vectors.
 
 The code for the experiments in this subsection can be found in the section ``Experiment Set \#3: 7 qubits, 7 layers'' in the notebook ``bps.ipynb''.
-Convergence graphs for each one of the experiments can be found in the ``VQC results/local cost 7 qubits'' subfolder. A text file with statistics and all evaluations can be found in the same folder, and used for the generation of future statistics.
+Convergence graphs for each one of the experiments can be found in the ``VQC results/local cost 7 qubits'' subfolder. A text file with statistics and all evaluations can be found in the same folder, and used for the generation of future statistics. Details on the structure of the text file can be found in the appendix.
 
 The same method was also implemented with 2-qubit MUB states.
 The required functions for its execution are in the notebook, beside the functions for the 3-qubit MUB states.
@@ -754,13 +762,18 @@ Examples of such choices are the values of the tolerance condition, success boun
 It is possible that by making these choices, I have missed some important factor.
 For example, it may be that if I checked more (and higher) success bounds, a clearer distinction between MUB and non-MUB experiments could be made --- both with lower success bounds in the 3 qubit case and with higher success bounds in the 7 qubit case.
 
-\paragraph*{More Repetitions.}
+\paragraph*{Different Repetition Structure.}
 While doing 25 repetitions of each experiment took a long time, it is not a parameter for completeness.
 There are MUB sets with 9 MUBs for 3-qubit systems, and each one of them contains 8 states, which brings a total of 72 states.
 This means, as a matter of fact, we explored around a third of all MUB states in Experiment 2.
 In Experiment 3, the gap is even more apparent: there are ${7 \choose 3} = 35$ choices for triplets in 7 qubits, which brings a total of $35 \times 72 = 2520$ initial states.
 
 Testing with much more repetitions might reveal that the results we got in Experiments 2 and 3 are no more than a statistical ``fluke'' and that our method is successful in the general case.
+
+Another issue is that, in the cases where MUBs were used, a single initial vector was used.
+This means that if it was a particularly bad choice, it could theoretically affect the whole experiment.
+If our initial conjecture is correct, then this does not matter, as MUB states span the entire state space, and are only partially ``hindered'' by the initial choice.
+However, a process to differentiate between the $k$ value and the number of experiment-set repetitions would not be difficult, but would definitely be beneficial.
 
 \paragraph*{Full MUBs for Higher Qubit Counts.}
 In this project, I used the examples in Lawrence~\cite{lawrence_mutually_2002} to calculate MUB sets for 2 and 3 qubits. However, there is no real reason to stop there: The work in~\cite{bandyopadhyay_new_2002} shows a construction for MUB sets for any number of qubits.
@@ -802,4 +815,34 @@ More details can be found in the document ``Tal's optimization idea.docx'' under
 
 
 \printbibliography
+
+\appendix
+
+\section{Structure of Statistics Files}
+Each experiment set's results were saved in statistics files called ``stats.txt''.
+These files contain a python dictionary, so they can be loaded directly into python for the generation of future statistics.
+
+Each statistics file describes experiments with \textbf{specific} parameters and hyper-parameters.
+Thus, for example, Experiment Set \#1's results are spread over several statistics files.
+
+The statistics files contain two main types of data:
+\begin{enumerate}
+    \item Raw convergence data. For every experiment run, a list of all convergence values is saved.
+    This list functions as a function from iteration no. to the value of the function in that iteration.
+    Convergence graphs can be generated directly from this data.
+    It is saved under the label `evals'.
+    \item Statistical data. this is data that was generated from the raw convergence data and is usually relevant for experiments.
+\end{enumerate}
+
+The statistical data contains the following fields:
+\begin{denseitemize}
+    \item `avg\_nfev': The average nfev for all experiments described by the file.
+    \item `correct\_addition\_percent': The fraction of iterations that managed to reach the success bound.
+    \item `correct\_states' (non-control-group): The MUB or Half-MUB states that managed to reach the success bound.
+    \item `correct\_states/thetas\_count': the \emph{number} of iterations that managed to reach the success bound.
+    \item `fin\_vals': The values on which each experiment halted its optimization.
+    \item `min\_nfev': The minimal nfev from all experiments.
+    \item `nfevs': The number of function evals that each optimization experiment had until it halted.
+\end{denseitemize}
+
 \end{document}
