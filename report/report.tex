@@ -101,7 +101,7 @@ VQAs are comprised of several elements: The quantum circuit, the cost function, 
 
     A problem-specific ansatz is tailored to the problem solved by the VQA using a-priori knowledge of the structure of the problem. Through this tailoring, there is a better chance that the circuit can reach values that are optimal for the problem at hand. When using a problem-specific ansatz, the initial state is usually also tailored according to the same information.
     
-    A problem-agnostic ansatz is not tailored to the problem specifically and can be used with no relevant information. It is usually comprised of repeated layers of quantum gates. Each layer is comprised of quantum gates that are usually easy to implement directly on quantum hardware, in contrast to problem-specific ansatzes. Problem-agnostic ansatzes are usually called ``hardware-efficient'' for this reason.
+    A problem-agnostic ansatz is not tailored to the problem specifically and can be used with no relevant information before the optimization. It is usually comprised of repeated layers of quantum gates. Each layer is comprised of quantum gates that are usually easy to implement directly on quantum hardware, in contrast to problem-specific ansatzes. Problem-agnostic ansatzes are usually called ``hardware-efficient'' for this reason.
     In this project, I focused on using hardware-efficient ansatzes.
     
     \item \textbf{The Cost Function.} The cost function $C(\thetas)$ defines the goal of the VQA. It is defined as a function from the parameters of the ansatz to the real numbers.
@@ -170,7 +170,7 @@ it is proven in~\cite{sharma_noise_2020} that
     C^{\textrm{local}} \leq C^{\textrm{global}} \leq nC^{\textrm{local}}
 \end{equation} 
 
-However, $C^\textrm{global}$ suffers from a provably vanishing gradient as $n$ increases, while $C^\textrm{local}$ does not. Thus, we will use $C^\textrm{local}$ or a linear combination of both costs in our experiments.
+However, $C^\textrm{global}$ suffers from a provably vanishing gradient as $n$ increases~\cite{cerezo_cost_2021}, while $C^\textrm{local}$ does not. Thus, we will use $C^\textrm{local}$ in our experiments.
 
 \subsection{Optimizers for Variational Quantum Algorithms} \label{subsec:optimizers}
 Classical optimizers perform the task of finding a (hopefully global) extremum of some scalar function.
@@ -178,7 +178,7 @@ An optimizer for a function $F$ needs to find the vector $\thetas \in S$ with $S
 
 In each step, an optimizer is given a point in the parameter space of the cost function $\thetas_{i}$, and is tasked with finding a new guess for parameter values $\thetas_{i+1}$, which hopefully has a lower cost value.
 
-The optimizer can either use the value of the cost function, its partial derivative (its gradient vector), or its second partial derivatives (its Hessian matrix).
+The optimizer can either use the value of the cost function, its partial derivatives (its gradient vector), or its second partial derivatives (its Hessian matrix).
 
 Methods that use the second derivative are often called Newton methods (as Newton's method uses the second derivative). Methods that use \emph{approximations} of the first and second derivative are called Quasi-Newton methods.
 Methods that use the first derivative are called Gradient-Based methods. Methods that do not use the derivative at all are called Gradient-Free methods.
@@ -190,7 +190,7 @@ The Powell algorithm~\cite{Powell1964} is a popular gradient-free optimizer that
 
 This method starts with some input set of search vectors $V = \{\vec{v}_i\}$, which are usually chosen to be the coordinate vectors in the parameter space. Each vector defines a search direction (both the direction of the vector and its negation).
 
-Searching along each of those directions in sequence, this method looks for the displacement $\{a_i\}$ along each direction that would minimize the cost when only varying parameters along the current direction.
+Starting from the current points $\thetas_i$ and searching along each of those directions in sequence, this method looks for the displacement $\{a_i\}$ along each direction that would minimize the cost when only varying parameters along the current direction.
 If bounds to the parameter space are specified, the minimization will be under said bounds. If bounds are not provided, then an unbounded line search will be used.
 Finding the displacements in each direction is done by some univariate gradient-free optimizer.
 Two common options for such an optimizer are Brent's parabolic interpolation method and the Golden-section search method, but their choice is independent of the general Powell method.
@@ -223,7 +223,7 @@ Thus, our points are sorted as $\Phi(\thetas_0) < \Phi(\thetas_1) < \dots < \Phi
 
 In addition, there is a ``trust region'' with a radius $\rho>0$. The method uses the $m+1$ points as the vertices of a simplex (an $m$-dimensional generalization of a triangle).
 The values of the cost function in these vertices are used for interpolation to a unique linear polynomial $\hat{F}(\thetas)$, and the values of the constraint functions in these vertices are used for interpolation to unique linear constraints $\{\hat{c}_i\}$
-The method then continues by minimizing $\hat{F}(\thetas)$, which is in the trust region --- that is, $\frac{\rho}{2} \leq \|\thetas - \thetas_0\| \leq \rho$, under the approximated constraints $\{\hat{c}_i\}$.
+The method then continues by minimizing $\hat{F}(\thetas)$ inside the trust region --- that is, $\frac{\rho}{2} \leq \|\thetas - \thetas_0\| \leq \rho$, under the approximated constraints $\{\hat{c}_i\}$.
 
 In case there is no point in the trust region in which all approximated constraints are satisfied, $\thetas$ is defined by minimizing the greatest of the constraint violations subject to the trust region bound.
 
@@ -243,7 +243,7 @@ When considering a cost function with 2 parameters, this definition coincides wi
 
 \begin{figure}[h]
     \centering
-    \captionsetup{justification=centering, margin=1cm}
+    \captionsetup{justification=centering, margin=0.5cm}
     \includegraphics[scale=0.5]{bp_3d.png}
     \caption{A barren plateau in an inverted bi-variate Gaussian with a small variance.}
     \label{fig:bp}
@@ -298,7 +298,7 @@ Arrasmith~\cite{arrasmith_effect_2021} claims that when the number of layers sca
 
 \begin{figure}[h]
     \centering
-    \captionsetup{justification=centering, margin=1cm}
+    \captionsetup{justification=centering, margin=0.5cm}
     \includegraphics{arrasmith_layer.png}
     \caption{A single layer of the hardware-efficient ansatz used in the project, as designed in Qiskit.}
     \label{fig:layer}
@@ -394,7 +394,7 @@ In the next section, I will discuss the different methods to use the concept of 
 
 
 \section{MUB Utilization Techniques} \label{sec:mub_use}
-This section specifies the novel ideas that Tal and I had for the project. As such, they are comprised of theoretic extensions and assumptions that we made.
+This section specifies the novel ideas that Tal Mor and I had for the project. As such, they are comprised of theoretic extensions and assumptions that we made.
 
 To explain our idea, let us consider a VQA in which the target is to reach a specific state.
 One such example is VQE (section~\ref{subsec:vqe}), in which the lowest eigenvalue is calculated by reaching the lowest eigenstate.
@@ -448,7 +448,7 @@ In addition, as will be discussed in section~\ref{meth:random_thetas}, this serv
 However, as mentioned in subsection~\ref{subsec:mub_gen}, the cost of calculation of the MUBs and their states is still exponential in time. Although the work of MUB calculation only needs to happen once and can be considered pre-processing, this makes the current suggestion unfeasible, for example, for $n>60$ qubits.
 
 In addition, although the work of~\cite{bandyopadhyay_new_2002} shows a theoretical construction for the MUB sets for $n$ qubits, it is difficult to implement in practice.
-Thus, Tal and I faced an interesting question: what can be done, for $n$ qubits, with only the MUB states for 2 and 3 qubits?
+Thus, Tal Mor and I faced an interesting question: what can be done, for $n$ qubits, with only the MUB states for 2 and 3 qubits?
 
 \subsection{``Half-MUB'' states} \label{meth:half_mub}
 We came up with a relatively simple idea: given an $n$-qubit register, pick 2 or 3 qubits. Generate a MUB state between the chosen qubits, and keep the rest in the 0 state.
@@ -486,12 +486,12 @@ Section~\ref{subsec:3qubits} shows experiments on 3 qubits and $k$ random MUB st
 
 Section~\ref{subsec:nqubits} shows experiments on higher numbers of qubits and $k$ half-MUB states.
 
-All experiments were implemented in Python, and can be found on GitHub under the link \url{https://github.com/ittay-alfassi/barren-plateaus}.
+All experiments were implemented in Python and can be found on GitHub under the link \url{https://github.com/ittay-alfassi/barren-plateaus}.
 The repository in the link contains the code for the experiments and their analysis, raw data generated by the experiments, convergence graphs for every experiment, and intermediate documents for future ideas.
 Throughout the section, references to specific folders and sections in the code will be given for each experiment and its results.
 
 MUB circuit synthesis was done using the Qsymm~\cite{qsymm} and BQSkit~\cite{bqskit} packages.
-The construction and execution of quantum circuits was done using the Qiskit~\cite{qiskit} package.
+The construction and execution of quantum circuits were done using the Qiskit~\cite{qiskit} package.
 The optimizers were taken from the SciPy~\cite{scipy} package.
 
 \subsection{Control Group: Random Initialization Vectors} \label{meth:random_thetas}
@@ -504,7 +504,7 @@ As shown in section~\ref{sec:mub_use}, if an ansatz is expressive, every MUB sta
 Thus, the comparison between $k$ MUB states and $k$ random initial vectors can be seen as a comparison between a carefully chosen set of starting parameters $\{\thetas^{\alpha} | \ket{\alpha} \textrm{ is a MUB state}\}$ and a random set of starting parameters $\{\thetas_0^i | \forall i, \thetas_{0}^{i} \in [-\pi, \pi)^m\}$.
 
 \subsection{Experiment Hyper-Parameters} \label{subsec:hyperparams}
-Every VQA experiment has, besides of the initial state and the given problem, other parameters that affect its execution.
+Every VQA experiment has, besides the initial state and the given problem, other parameters that affect its execution.
 These parameters are often called hyper-parameters (to separate them from the parameter vector of the ansatz and optimizer).
 These hyper-parameters can have a deep impact on the result of the experiment.
 Thus, it is important to list them and explain the choice of every hyper-parameter.
@@ -514,7 +514,7 @@ The experiments I used to choose these values are detailed in the next subsectio
 
 \paragraph*{Optimizer}
 The same optimization problem can be solved by different optimizers.
-The optimizers that I used in my experiments are the gradient-free optimizers COBYLA and Powell.
+The optimizers that I used in my experiments are the gradient-free optimizers COBYLA and Powell. I also tested the use of the Nelder-Mead optimizer~\cite{Nelder-Mead}.
 
 \paragraph*{Tolerance Condition}
 Every optimizer has certain halting conditions.
@@ -581,7 +581,7 @@ With $\tol=\e{-5}$, Nelder-Mead took over 1 hour and could not finish a single e
 For this reason, I did not test with $\e{-12}$ either.
 
 My conclusion is that COBYLA and Powell are usable with any tol value, but Nelder-Mead is only usable (and barely so) with $\tol=\e{-2}$.
-Thus, the value that I chose for tol is $\e{-5}$. This value that is low enough to not stop convergence in extreme situations, but probably not so low as to waste time on fruitless runs.
+Thus, the value that I chose for tol is $\e{-5}$. This value is low enough to not stop convergence in extreme situations, but probably not so low as to waste time on fruitless runs.
 The code for the experiments in this paragraph can be found under the section ``Hyper-Parameter Experiments: Choosing TOL'' in the notebook ``bps.ipynb''.
 % The result data can be found under ``VQC results/tol\_experiments.txt''.
 
@@ -590,13 +590,28 @@ After choosing reasonable tol values from the results of the previous experiment
 From 4 qubits and 4 layers to 7 qubits and 7 layers.
 
 \paragraph*{Results.}
-The success percentages of the optimizers, both for $C=0.4$ and for $C=0.1$ are summarized in Table\mytodo{Add table.}. The average nfevs of the optimizers are shown in Figure \mytodo{Add figure!}.
+The success percentages of the optimizers, both for $C=0.4$ and for $C=0.1$ are summarized in Table \ref{tbl:optimizer_results}.
 
-\mytodo{Modify the details according to the actual results.}
-Both COBYLA and Powell managed to perform well on 4-7 qubits.
+\begin{table}[]
+    \centering
+    \captionsetup{justification=centering, margin=0.5cm}
+    \begin{tabular}{|c|c|c|}
+    \hline
+    $n$ & COBYLA & Powell \\ \hline
+    4 & \begin{tabular}[c]{@{}c@{}}25/25 reached 0.4\\ 25/25 reached 0.1\\ avg nfev 470.8\end{tabular} & \begin{tabular}[c]{@{}c@{}}25/25 reached 0.4\\ 25/25 reached 0.1\\ avg nfev 2297.64\end{tabular} \\ \hline
+    5 & \begin{tabular}[c]{@{}c@{}}25/25 reached 0.4\\ 24/25 reached 0.1\\ avg nfev 994.88\end{tabular} & \begin{tabular}[c]{@{}c@{}}25/25 reached 0.4\\ 25/25 reached 0.1\\ avg nfev 4190.72\end{tabular} \\ \hline
+    6 & \begin{tabular}[c]{@{}c@{}}25/25 reached 0.4\\ 0/25 reached 0.1\\ avg nfev 6984.6\end{tabular} & \begin{tabular}[c]{@{}c@{}}25/25 reached 0.4\\ 22/25 reached 0.1\\ avg nfev 24049.04\end{tabular} \\ \hline
+    7 & \begin{tabular}[c]{@{}c@{}}25/25 reached 0.4\\ 10/25 reached 0.1\\ avg nfev 14062.4\end{tabular} & \begin{tabular}[c]{@{}c@{}}23/24 reached 0.4\\ 22/24 reached 0.1\\ avg nfev 15815.37\end{tabular} \\ \hline
+    \end{tabular}
+    \caption{The number of successful experiments and average Number of Function EVals (nfev) for different optimizers and numbers of qubits. For technical reasons, the Powell experiments with 7 qubits could not be completed.}
+    \label{tbl:optimizer_results}
+\end{table}
+
+Both COBYLA and Powell managed to perform relatively well on 4-7 qubits.
 Nelder-Mead took more time to finish 4 qubits than all the COBYLA experiments. Thus, it was neglected for the rest of the experiments.
 
-Between COBYLA and Powell, COBYLA took less time to finish the optimization in most cases. Thus, I chose to use COBYLA for the rest of the experiments.
+For some reason, the case of 6 qubits was particularly difficult for both COBYLA and Powell. COBYLA failed in more optimization cases, and Powell required significantly more time. 
+Between COBYLA and Powell, COBYLA took less time to finish the optimization in most cases. Thus, out of a lack of time to experiment, I chose to use COBYLA for the rest of the experiments.
 The code for the experiments in this paragraph can be found under the section ``Hyper-Parameter Experiments: Choosing the Optimizer'' in the notebook ``bps.ipynb''.
 
 \subsection{Experiment Set 1: Reproducing the Arrasmith Barren Plateau} \label{subsec:reproduce}
@@ -622,8 +637,30 @@ In my recreation, I used the following parameters:
 \end{denseitemize}
 
 \paragraph*{Results.}
-The graph of the average nfev as a function of the number of qubits is given in figure \mytodo{Add a figure!}, with an exponential scale.
-The success rates of each number of qubits is given in table \mytodo{Add a table!}.
+The graph of the average nfev as a function of the number of qubits is given in Figure \ref{fig:recreation}, with an exponential scale.
+
+\begin{figure}[]
+    \centering
+    \captionsetup{justification=centering, margin=0.1cm}
+    \includegraphics[scale=0.8]{recreation.png}
+    \caption{A logarithmic scaling graph of the results of Experiment 1 using COBYLA.}
+    \label{fig:recreation}
+\end{figure}
+
+% The success rates of each number of qubits are given in table \mytodo{Add a table!}.
+% \begin{table}[]
+%     \begin{tabular}{|c|c|}
+%     \hline
+%     $n$ & success rate ($C=0.4$) \\ \hline
+%     4 & 5/5 \\ \hline
+%     5 & 5/5 \\ \hline
+%     6 & 5/5 \\ \hline
+%     7 & 5/5 \\ \hline
+%     8 & 5/5 \\ \hline
+%     9 & 5/5 \\ \hline
+%     10 & 0/5 \\ \hline
+%     \end{tabular}
+% \end{table}
 
 Thus, in the values that we were able to calculate, we can see that an exponential barren plateau appears, partially recreating the graph in Section 4 of Arrasmith~\cite{arrasmith_effect_2021}.
 
@@ -654,7 +691,7 @@ The circuits for two qubits are under the subfolder ``2\_302''. The circuits for
 
 
 \subsection{Experiment Set 2: 3 qubits and $n$ layers} \label{subsec:3qubits}
-The following experiment is the first example of a practical comparison between MUB-based experiments and non-MUB based experiments.
+The following experiment is the first example of a practical comparison between MUB-based experiments and non-MUB-based experiments.
 
 Parameters and hyper-parameters were defined as the following:
 \begin{denseitemize}
@@ -672,7 +709,7 @@ Parameters and hyper-parameters were defined as the following:
 The results are presented in Figure \ref{fig:3qubits_cobyla}.
 \begin{figure}[]
     \centering
-    \captionsetup{justification=centering, margin=1cm}
+    \captionsetup{justification=centering, margin=0.5cm}
     \includegraphics[scale=0.8]{3qubits_cobyla.png}
     \caption{A scatter plot of the results of Experiment 2 using COBYLA. The x-axis shows the nfevs of each experiment, and the y-axis shows the value at which the optimization halted.}
     \label{fig:3qubits_cobyla}
@@ -680,7 +717,7 @@ The results are presented in Figure \ref{fig:3qubits_cobyla}.
 
 % \begin{figure}[]
 %     \centering
-%     \captionsetup{justification=centering, margin=1cm}
+%     \captionsetup{justification=centering, margin=0.5cm}
 %     \includegraphics[scale=0.8]{3qubits_powell.png}
 %     \caption{A scatter plot of the same experiment set with the Powell optimizer.}
 %     \label{fig:3qubits_powell}
@@ -720,7 +757,7 @@ The results are presented in Figure~\ref{fig:7qubits}.
 
 \begin{figure}[]
     \centering
-    \captionsetup{justification=centering, margin=1cm}
+    \captionsetup{justification=centering, margin=0.5cm}
     \includegraphics[scale=0.8]{7qubits.png}
     \caption{A scatter plot of the results of Experiment 2. The x-axis shows the nfevs of each experiment, and the y-axis shows the value at which the optimization halted.}
     \label{fig:7qubits}
@@ -743,7 +780,7 @@ The required functions for its execution are in the notebook, beside the functio
 
 \section{Discussion}
 In this project, I have studied many different aspects of Optimization, Near-Term Quantum Computing, and Quantum Information.
-Tal and I tried to apply this knowledge to try and mitigate the challenge of Barren Plateaus. Unfortunately, we did not succeed. However, I believe that this idea does not end here.
+Tal Mor and I tried to apply this knowledge to try and mitigate the challenge of Barren Plateaus. Unfortunately, we did not succeed. However, I believe that this idea does not end here.
 There are more experiments to be made, and there are more methods to try to fully explore this idea.
 Many experimental choices were made ``Ad-Hoc'' and due to intuition --- perhaps doubling back and trying different hyper-parameter choices could lead to interesting conclusions.
 I will discuss ideas for future work in the following section.
@@ -758,8 +795,8 @@ While I do not have mathematical expertise in Measure Theory, understanding the 
 
 \paragraph*{Trying Different Hyper-Parameters.}
 In Section~\ref{sec:experiments}, I made certain choices regarding hyper-parameters out of intuition or lack of time.
-Examples of such choices are the values of the tolerance condition, success bound, and even the optimizer (the removal of Nelder-Mead as a candidate).
-It is possible that by making these choices, I have missed some important factor.
+Examples of such choices are the values of the tolerance condition, success bound, and even the optimizer (the removal of Nelder-Mead as a candidate, and picking COBYLA over Powell).
+It is possible that by making these choices, I have missed some important factors.
 For example, it may be that if I checked more (and higher) success bounds, a clearer distinction between MUB and non-MUB experiments could be made --- both with lower success bounds in the 3 qubit case and with higher success bounds in the 7 qubit case.
 
 \paragraph*{Different Repetition Structure.}
@@ -795,7 +832,7 @@ An initial sketch of how to use MUBs for Subspace VQE \cite{nakanishi_subspace-s
 %     \item Repeat until convergence of the optimizer.
 % \end{enumerate}
 
-% Tal and I considered a different idea, which uses the cost function value at \emph{multiple, different locations} as part of this optimization. Using this kind of optimizer, we could use the following method:
+% Tal Mor and I considered a different idea, which uses the cost function value at \emph{multiple, different locations} as part of this optimization. Using this kind of optimizer, we could use the following method:
 % \begin{enumerate}
 %     \item 	Start with a parametrized circuit (which spans the entire space), and a \emph{random} initial guess of parameters $\thetas_0$.
 %     \item Run the circuit and get an initial cost evaluation (based on$\thetas_0$).
