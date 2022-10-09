@@ -1,6 +1,0 @@
-Tasks for MUB-BP exploration:
-
-1. Gather data on all convergence differences
-2. Draw a histogram (with guidelines) for VQC and VQE
-3. Find specific proofs of BPs and replicate them
-4. Show convergence graphs and gradient graphs for specific experiments

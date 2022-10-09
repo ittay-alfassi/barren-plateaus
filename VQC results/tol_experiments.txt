@@ -1,0 +1,35 @@
+===Results for COBYLA===
+stats for tol=0.2
+avg nfev is 137.92
+amount of experiments that succeeded is 25.
+stats for tol=0.01
+avg nfev is 129.88
+amount of experiments that succeeded is 25.
+stats for tol=1e-05
+avg nfev is 139.6
+amount of experiments that succeeded is 25.
+stats for tol=1e-12
+avg nfev is 131.24
+amount of experiments that succeeded is 25.
+
+===Results for Powell===
+stats for tol=0.2
+avg nfev is 211.36
+amount of experiments that succeeded is 25.
+stats for tol=0.01
+avg nfev is 295.52
+amount of experiments that succeeded is 25.
+stats for tol=1e-05
+avg nfev is 623.84
+amount of experiments that succeeded is 25.
+stats for tol=1e-12
+avg nfev is 928.64
+amount of experiments that succeeded is 25.
+
+===Results for Nelder-Mead===
+stats for tol=0.2
+avg nfev is 217.0
+amount of experiments that succeeded is 0.
+stats for tol=0.01
+avg nfev is 4302.32
+amount of experiments that succeeded is 25.
