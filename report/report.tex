@@ -82,7 +82,7 @@ This project is mainly based on the work of Arrasmith et al.~\cite{arrasmith_eff
 
 \subsection{Variational Quantum Algorithms}
 A Variational Quantum Algorithm is an algorithm that takes some computational problem and solves it by hybrid classical-quantum optimization.
-VQAs are comprised of several elements: The quantum circuit, the cost function, and the optimizer.
+VQAs are comprised of several elements: The quantum circuit $U(\thetas)$, the cost function $C(\thetas)$, and the optimizer.
 
 \begin{enumerate}
     \item \textbf{The Quantum Circuit.} Every VQA problem uses a quantum circuit with some parametric values.
@@ -141,14 +141,14 @@ A different example of a VQA is the problem of Variational Quantum Compiling (VQ
 
 In VQC, the input of the problem is a general $n$-qubit unitary operation $V$.\footnote{In the Khatri paper, the target unitary is denoted as $U$, while the ansatz is denoted $V$. I switched the notations to stay consistent with the rest of the examples and papers.} The goal of the algorithm is to control the parameters of a parametric quantum circuit $U(\thetas)$ so its behavior will be similar to that of $V$.
 
-Formally, there are two possible goals: either that $U(\thetas)$ and $V$ will perform the same operation on all states, or that $U(\thetas)$ and $V$ will perform the same operation on a specific input state.
+Two possible goals are defined by the paper: either that $U(\thetas)$ and $V$ will perform the same operation on all states, or that $U(\thetas)$ and $V$ will perform the same operation on a specific input state.
 In this project, I will use the latter as the problem definition. Thus, we wish that $V\ket{\vec{0}} = U(\thetas)\ket{\vec{0}}$.
 
 There are two different cost functions presented in~\cite{khatri_quantum-assisted_2019}.
 The first is straightforward and is defined by
 
 \begin{equation}
-    C^{\textrm{global}} = 1 - \left|\bra{\vec{0}}UV^\dagger\ket{\vec{0}}\right|^2
+    C^{\textrm{global}} = 1 - \left|\bra{\vec{0}}U^\dagger V\ket{\vec{0}}\right|^2
 \end{equation}
 
 Another cost function, called the local cost function, is defined by 
@@ -164,11 +164,16 @@ where
 and ${\ket{0}\bra{0}}_j \otimes I$ is the tensor product of the matrix $\ket{0}\bra{0}$ in the jth term and identity matrices in all other terms.
 The operational meaning of $p_0^{(j)}$ is the probability to obtain the zero measurement outcome on qubit $j$ for the state $U^\dagger V\ket{\vec{0}}$.
 
+Concrete examples of the difference between the two cost functions are given in Appendix \ref{app:vqc_cost_example}.
+
+
 it is proven in~\cite{sharma_noise_2020} that
 
 \begin{equation}
     C^{\textrm{local}} \leq C^{\textrm{global}} \leq nC^{\textrm{local}}
 \end{equation} 
+
+The semantic meaning of this inequality is that $C^\textrm{global} and C^\textrm{local}$ reach a minimum and converge together.
 
 However, $C^\textrm{global}$ suffers from a provably vanishing gradient as $n$ increases~\cite{cerezo_cost_2021}, while $C^\textrm{local}$ does not. Thus, we will use $C^\textrm{local}$ in our experiments.
 
@@ -881,5 +886,55 @@ The statistical data contains the following fields:
     \item `min\_nfev': The minimal nfev from all experiments.
     \item `nfevs': The number of function evals that each optimization experiment had until it halted.
 \end{denseitemize}
+
+
+\section{Examples of VQC Cost Functions} \label{app:vqc_cost_example}
+
+
+Consider the case of 1 qubit. Let us use $V=\sigma_x$, $U(\theta) = R_x(\theta) = e^{-i\frac{\theta}{2}\sigma_x}$ ($R_x$ is a rotation around the x axis).
+
+The global cost function reads:
+\begin{equation*}
+    C^{global} = 1 - \left| \bra{0} U^\dagger V \ket{0}\right|^2 = 1- \left| \bra{0} R_x(-\theta) \sigma_x \ket{0}\right|^2
+\end{equation*}
+
+The local cost function reads:
+\begin{align*}
+    C^{local} &= 1 - p_0^{(1)} = 1 - \tr\left[ (\ket{0}\bra{0}) U^\dagger V \ket{0}\bra{0} V^\dagger U \right] \\
+    &= 1 - \tr\left[ \ket{0}\bra{0} R_x(-\theta) \sigma_x \ket{0}\bra{0} \sigma_x R_x(\theta) \right] \\
+    &= 1- \left| \bra{0} R_x(-\theta) \sigma_x \ket{0}\right|^2
+\end{align*}
+
+In this case, the two values are identical, since the concept of locality is trivial.
+
+
+However, when moving to 2 qubits (and up), there is an inherent difference in the mathematical structure of the cost functions, even in simple cases.
+Let us consider simple, 1-local circuits and ansatzes for 2 qubits.
+Let $V=\sigma_x \otimes \sigma_x$, $U(\theta_1,\theta_2) = R_x(\theta_1) \otimes R_x(\theta_2)$, where $R_x(\theta) = e^{-i\frac{\theta}{2}\sigma_x}$ denotes a rotation of a qubit around the x axis.
+The global cost function reads:
+
+\begin{align*}
+    C^{global} &= 1 - \left| \bra{00} U^\dagger V \ket{00}\right|^2 = 1- \left| \bra{00} (R_x(-\theta_1) \otimes R_x(-\theta_2)) (\sigma_x \otimes \sigma_x) \ket{00}\right|^2 \\
+    &= 1 - \left| \left( \bra{0} R_x(-\theta_1) \sigma_x \ket{0} \right) \otimes \left( \bra{0} R_x(-\theta_2) \sigma_x \ket{0} \right) \right|^2  \\
+    &= 1 - \left| \bra{0} R_x(-\theta_1) \sigma_x \ket{0} \right|^2 \cdot \left| \bra{0} R_x(-\theta_2) \sigma_x \ket{0}\right|^2
+\end{align*}
+
+
+The local cost function reads:
+
+\begin{align*}
+    C^{local} &= 1 - \frac{1}{2}(p_0^{(1)} + p_0^{(1)}) \\
+    &= 1-\frac{1}{2}\left( \tr\left[ (\ket{0}\bra{0} \otimes I) U^\dagger V \ket{00}\bra{00} V^\dagger U \right] + \tr\left[ (I \otimes \ket{0}\bra{0}) U^\dagger V \ket{00}\bra{00} V^\dagger U  \right] \right) \\
+    &= 1 - \frac{1}{2}\tr \left[ (\ket{0}\bra{0} \otimes I) (R_x(-\theta_1) \otimes R_x(-\theta_2)) (\sigma_x \otimes \sigma_x) \ket{00} \bra{00} (\sigma_x \otimes \sigma_x) (R_x(\theta_1) \otimes R_x(\theta_2)) \right] \\
+    &- \frac{1}{2}\tr \left[ (I \otimes \ket{0}\bra{0}) (R_x(-\theta_1) \otimes R_x(-\theta_2)) (\sigma_x \otimes \sigma_x) \ket{00} \bra{00} (\sigma_x \otimes \sigma_x) (R_x(\theta_1) \otimes R_x(\theta_2)) \right] \\
+    &= 1 - \frac{1}{2}\tr \left[ \left(\ket{0}\bra{0} R_x(-\theta_1) \sigma_x \ket{0} \bra{0} \sigma_x R_x(\theta_1) \right) \otimes \left( R_x(-\theta_1) \sigma_x \ket{0} \bra{0} \sigma_x R_x(\theta_1)\right) \right] \\
+    &- \frac{1}{2}\tr \left[ \left(R_x(-\theta_1) \sigma_x \ket{0} \bra{0} \sigma_x R_x(\theta_1) \right) \otimes \left(\ket{0}\bra{0} R_x(-\theta_1) \sigma_x \ket{0} \bra{0} \sigma_x R_x(\theta_1)\right) \right] \\
+    &= 1 - \frac{1}{2}\tr \left[\ket{0}\bra{0} R_x(-\theta_1) \sigma_x \ket{0} \bra{0} \sigma_x R_x(\theta_1) \right] - \frac{1}{2}\tr \left[ R_x(-\theta_1) \sigma_x \ket{0} \bra{0} \sigma_x R_x(\theta_1) \right] \\
+    &= 1 - \frac{1}{2} \left| \bra{0} R_x(-\theta_1) \sigma_x \ket{0} \right|^2 - \frac{1}{2} \left| \bra{0} R_x(-\theta_2) \sigma_x \ket{0} \right|^2
+\end{align*}
+
+
+Thus, the global cost contains multiplication in the ``error'' terms for each qubit, and the local cost contains addition.
+When the number of qubits increases, this leads to an exponentially vanishing gradient in the global cost.
 
 \end{document}
