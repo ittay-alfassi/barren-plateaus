@@ -25,7 +25,11 @@
 \newcommand{\del}{\partial}
 \newcommand{\base}{\mathcal{B}}
 \newcommand{\e}[1]{ 10^{#1}}
-\newcommand{\tvect}[2]{{#1 \choose #2}}
+\newcommand{\dvect}[2]{{#1 \choose #2}}
+\newcommand{\qvect}[4]{%
+  \ensuremath{\Bigl(\negthinspace\begin{smallmatrix}#1\\#2\\#3\\#4\end{smallmatrix}\Bigr)}}
+
+
 
 \DeclareMathOperator{\tr}{Tr}
 \DeclareMathOperator{\Var}{Var}
@@ -132,6 +136,14 @@ The cost function is straightforwardly defined as the expectation value of the p
     C(\thetas) = \bra{\psi(\thetas)} H \ket{\psi(\thetas)} = \bra{\psi_0} U^\dagger(\thetas) H U(\thetas) \ket{\psi_0}
 \end{equation}
 
+This cost function compiles with the definition in equation \ref{eqn:general_cost}:
+\begin{align*}
+    C(\thetas) &= \bra{\psi(\thetas)} H \ket{\psi(\thetas)} = \bra{\vec{0}} U^\dagger(\thetas) H U(\thetas) \ket{\vec{0}} \\
+    &= \tr \left[ \bra{\vec{0}} U^\dagger(\thetas) H U(\thetas) \ket{\vec{0}} \right] = \tr \left[ H U(\thetas) \ket{\vec{0}}  \bra{\vec{0}} U^\dagger(\thetas)\right]
+\end{align*}
+
+That is, with $\rho = \ket{\vec{0}}\bra{\vec{0}}, O=H$, and $f$ is the identity.
+
 In case $H$ is a molecular Hamiltonian (converted to a qubit Hamiltonian using an appropriate transformation), a problem-specific ansatz can be used. One such option is the Unitary Coupled-Cluster (UCC) ansatz, together with the Hartree-Fock state as the initial state.
 
 Of course, a hardware-efficient ansatz can be used for any structure of $H$.
@@ -148,8 +160,17 @@ There are two different cost functions presented in~\cite{khatri_quantum-assiste
 The first is straightforward and is defined by
 
 \begin{equation}
-    C^{\textrm{global}} = 1 - \left|\bra{\vec{0}}UV^\dagger\ket{\vec{0}}\right|^2
+    C^{\textrm{global}} = 1 - \left|\bra{\vec{0}}U^\dagger V\ket{\vec{0}}\right|^2
 \end{equation}
+
+In the form of equation \ref{eqn:general_cost}:
+\begin{align*}
+    C^{\textrm{global}} &= 1 - \left|\bra{\vec{0}}U^\dagger V\ket{\vec{0}}\right|^2
+    = 1 - \bra{\vec{0}}U^\dagger V\ket{\vec{0}}\bra{\vec{0}}V^\dagger U\ket{\vec{0}} \\
+    &= 1 - \tr \left[ \bra{\vec{0}}U^\dagger V\ket{\vec{0}}\bra{\vec{0}}V^\dagger U\ket{\vec{0}} \right]
+    = 1 - \tr \left[  \left(V\ket{\vec{0}}\bra{\vec{0}}V^\dagger\right) U\ket{\vec{0}} \bra{\vec{0}}U^\dagger \right] \\
+    &= \tr \left[ U \ket{\vec{0}}\bra{\vec{0}} U^\dagger \right] + (-1) \cdot \tr \left[  \left(V\ket{\vec{0}}\bra{\vec{0}}V^\dagger\right) U\ket{\vec{0}} \bra{\vec{0}}U^\dagger \right]
+\end{align*}
 
 Another cost function, called the local cost function, is defined by 
 
@@ -159,12 +180,19 @@ Another cost function, called the local cost function, is defined by
 
 where
 \begin{equation} \label{eqn:local_vqc_cost}
-    p_0^{(j)} = \tr[({\ket{0}\bra{0}}_j \otimes I) U^\dagger V \ket{\vec{0}}\bra{\vec{0}} V^\dagger U]
+    p_0^{(j)} = \tr \left[\left({\ket{0}\bra{0}}_j \otimes I\right) U^\dagger V \ket{\vec{0}}\bra{\vec{0}} V^\dagger U \right]
 \end{equation}
 and ${\ket{0}\bra{0}}_j \otimes I$ is the tensor product of the matrix $\ket{0}\bra{0}$ in the jth term and identity matrices in all other terms.
 The operational meaning of $p_0^{(j)}$ is the probability to obtain the zero measurement outcome on qubit $j$ for the state $U^\dagger V\ket{\vec{0}}$.
 
-it is proven in~\cite{sharma_noise_2020} that
+In the form of equation \ref{eqn:general_cost}:
+\begin{align*}
+    C^{\textrm{local}} &= 1 - \frac{1}{n} \sum_{j=1}^{n} p_0^{(j)} \\
+    &= \sum_{j=1}^n \frac{1}{n} \left(1 - \tr\left[\left({\ket{0}\bra{0}}_j \otimes I\right) U^\dagger V \ket{\vec{0}}\bra{\vec{0}} V^\dagger U\right] \right) \\
+    &= \sum_{j=1}^n \frac{1}{n} \left(1 - \tr\left[ \left(V \ket{\vec{0}}\bra{\vec{0}} V^\dagger\right) U \left({\ket{0}\bra{0}}_j \otimes I\right) U^\dagger\right] \right)
+\end{align*}
+
+It is proven in~\cite{sharma_noise_2020} that
 
 \begin{equation}
     C^{\textrm{local}} \leq C^{\textrm{global}} \leq nC^{\textrm{local}}
@@ -351,46 +379,52 @@ The intuition for such a definition is that, if a state from one basis is measur
 In general, the term ``MUB set'' refers to a set of bases that are pairwise mutually unbiased.
 The term ``MUB states'', in the context of some MUB set, is the collection of states that comprises the MUBs of that set.
 
-\subsection{Generation of Mutually Unbiased Bases} \label{subsec:mub_gen}
+\subsection{Existence and Generation of Mutually Unbiased Bases} \label{subsec:mub_gen}
 The question of the existence, number, and generation of MUB sets is only answered for certain cases.
 
 The following result has been achieved~\cite{bandyopadhyay_new_2002}:
-For an $d$-dimensional state space, if $d$ is prime or a prime power ($p^k$ for a prime $p$ and a natural number $k$), there exists a set of $d+1$ MUBs.
+For an $d$-dimensional state space, if $d$ is prime or a prime power ($p^k$ for a prime $p$ and a natural number $k$), there exists a set of $d+1$ MUBs ($d+1$ is also an upper bound).
 There is constructive proof for this result.
 Because the dimension of an $n$-qubit state space is $2^n$ (a prime power), there is a construction for $2^n+1$ MUBs for every $n$.
+Note that this result does not hold, even for small values of $d$. For example, for $d=6$ (i.e. a 6-dimensional space), the question of the maximal size MUB set is still open.
 
 It is important to note, of course, that once a MUB set is found, there is an infinite amount of possibilities for MUB sets of the same size. Applying any arbitrary unitary $U$ to all states of the set of bases will preserve the constraints on the inner products of every pair of states, which gives a new MUB set (assuming $U$ did not act as a permutation on the set).
 
-Connections between the problem of finding MUB sets and other problems have been made. For example, Lawrence et al.~\cite{lawrence_mutually_2002} showed that the set of $4^n-1$ Pauli operators (in the $n$-qubit case) can be partitioned into $2^n+1$ distinct subsets, each consisting of $2^n-1$ commuting operators. The same work shows two interesting conclusions:
-\begin{itemize}
-    \item The set of eigenbases that mutually diagonalize each subset is a set of MUBs.
-    That is, if each subset $\mathcal{F}_i$ is mutually diagonalized by an orthonormal basis $\base_i$, then the set $\{\base_i\}$ is a MUB set.
-    \item Each such partitioning defined a unique choice of $2^n+1$ MUBs in the $n$-qubit Hilbert space.
-\end{itemize}
+Connections between the problem of finding MUB sets and other problems have been made.
 
-I used the examples given in the work of Lawrence et al. to construct a set of MUBs for 2 and 3 qubits.
-However, it is important to note that the generation of MUBs in this fashion requires exponential time in the number of qubits: it requires the simultaneous diagonalization of matrices that are exponential in size.
+In a paper by Lawrence et al.~\cite{lawrence_mutually_2002}, it is shown the the $4^n-1$ Pauli strings for $n$ qubits can be partitioned into $2^n+1$ sets, each containing $2^n-1$ \emph{commuting} operators.
+As the strings in each subset commute, they define a joint eigenbasis.
+Thus, each subset defines a basis for the $n$ qubit soace, and we get $2^n+1$ bases.
+Lawrence shows an interesting property: these $2^n+1$ bases are pairwise Mutually Unbiased.
+It is also shown that there are multiple options for partitioning, and each partitioning option defines a unique set of MUBs for the $n$ qubit Hilbert space.
+
+
+I used the examples given in the work of Lawrence et al. to construct a set of MUBs for 2 and 3 qubits. The example for 2 qubits is given in Appendix \ref{app:mub_table}.
+
+It is important to note, however, that the generation of MUBs in this fashion requires exponential time in the number of qubits: it requires the simultaneous diagonalization of matrices that are exponential in size.
 
 \subsection{MUB States as an Exhaustive Search}
 
 The set of MUB states for one qubit is well known. The set contains 3 MUBs, and each basis is the eigenbasis of a Pauli matrix.
 Specifically, the bases and states are
-$$ \base_z = \{ \ket{0}, \ket{1}\}  = \{\tvect{1}{0}, \tvect{0}{1}\}$$
-$$ \base_x = \{ \ket{+}, \ket{-}\}  = \{\frac{1}{\sqrt{2}}\tvect{1}{1}, \frac{1}{\sqrt{2}}\tvect{1}{-1}\}$$
-$$ \base_y = \{ \ket{+_i}, \ket{-_i}\}  = \{\frac{1}{\sqrt{2}}\tvect{1}{i}, \frac{1}{\sqrt{2}}\tvect{1}{-i}\}$$
+$$ \base_z = \{ \ket{0}, \ket{1}\}  = \biggl\{\dvect{1}{0}, \dvect{0}{1}\biggr\}$$
+$$ \base_x = \{ \ket{+}, \ket{-}\}  = \biggl\{\frac{1}{\sqrt{2}}\dvect{1}{1}, \frac{1}{\sqrt{2}}\dvect{1}{-1}\biggr\}$$
+$$ \base_y = \{ \ket{+_i}, \ket{-_i}\}  = \biggl\{\frac{1}{\sqrt{2}}\dvect{1}{i}, \frac{1}{\sqrt{2}}\dvect{1}{-i}\biggr\}$$
 
-When displayed on the Bloch sphere, these states are presented as the poles of the sphere in the z, x, and y axes, appropriately. As such, every 1-qubit state is reachable through a linear combination of these six states with real coefficients.
+When displayed on the Bloch sphere, these states are presented as the poles of the sphere in the z, x, and y axes, appropriately. Furthermore, measurement in Mutually Unbiased Bases is known to be ideal for Quantum Tomography --- both for 1 qubit and multiple qubits. In this sense, they represent points of interest throughout the entire state space.
 
-This is our initial intuition: these states reach every pole of the sphere that defines all 1-qubit states.
-We (Tal Mor and I) believed that this can be extended to higher dimensions. If our hypothesis of the importance of MUBs is correct, they can be useful when trying to check for a certain property, \textbf{or when searching for a specific point in space.}
+This is our initial intuition: MUB states can be useful when trying to check for a certain property, \textbf{or when searching for a specific point in space.}
 
-An observation made in~\cite{lawrence_mutually_2002} supports our hypothesis.
+An observation made in~\cite{lawrence_mutually_2002} sheds more light on the nature of MUB states as high-dimension poles.
 In~\cite{lawrence_mutually_2002}, a MUB is generated by being the orthonormal basis that mutually diagonalizes a subset of Pauli operators.
 Let $\{O_i\}$ be such a subset of Pauli operators, and let $\{\ket{\psi_i}\}$ be the mutually diagonalizing eigenbasis calculated for that subset.
 Let $U_i(\theta) = exp(-i\theta O_i)$ be a unitary high-dimensional rotation defined by $O_i$.
 When $U_i$ acts on a MUB state $\ket{\psi_j}$, that state is not affected (up to a global phase) \textbf{and acts as a pole}.
 
-In the next section, I will discuss the different methods to use the concept of MUB states as an exhaustive search in mitigating barren plateaus.
+Through this distinction and intuition, Tal Mor defined the ``Quantum Exhaustive Search'':
+When searching for some ideal state $\ket{\psi}$ for a given problem, start by checking all MUB states.
+
+In the next section, I will discuss the different methods to use the concept of the Quantum Exhaustive Search in mitigating barren plateaus.
 
 
 \section{MUB Utilization Techniques} \label{sec:mub_use}
@@ -457,7 +491,6 @@ The amount of such states for $n$ qubits is polynomial. There are ${n \choose 3}
 Thus, their generation (and even exhaustive experimentation with them) takes reasonable time.
 
 This method got the nickname ``Half-MUBs'', as its results resemble MUB states but do not give the same exhaustive properties.
-However, no one guaranteed that MUB states act as an exhaustive search themselves, so what the hell.
 
 \subsection{MUB Utilization in VQC} \label{subsec:mub_vqc}
 As explained in subsection~\ref{subsec:vqc}, the goal of VQC is to make the ansatz act like a specific target unitary (either in general or on a specific state).
@@ -505,16 +538,21 @@ Thus, the comparison between $k$ MUB states and $k$ random initial vectors can b
 
 \subsection{Experiment Hyper-Parameters} \label{subsec:hyperparams}
 Every VQA experiment has, besides the initial state and the given problem, other parameters that affect its execution.
-These parameters are often called hyper-parameters (to separate them from the parameter vector of the ansatz and optimizer).
-These hyper-parameters can have a deep impact on the result of the experiment.
+In the world of Machine Learning, these ``other parameters'' are called hyper-parameters.
+
+The term hyper-parameters is used to indicate that, on one hand, they are separate from the parameter vector of the ansatz, which is optimized during the algorithm --- hyper-parameters are fixed during the entire execution of an experiment.
+On the other hand, hyper-parameters can hold different values, and these values control the experiments execution and results. Different hyper-parameter values can have a deep impact on the result of an experiment.
 Thus, it is important to list them and explain the choice of every hyper-parameter.
 
 I will now list the hyper-parameters and their chosen values.
 The experiments I used to choose these values are detailed in the next subsection.
 
+Note: For this discussion, I consider the ``given problem'' to be the target unitary and the ansatz.
+For future work, it is possible (and perhaps interesting) to consider the form of the ansatz as a hyper-parameter.
+
 \paragraph*{Optimizer}
 The same optimization problem can be solved by different optimizers.
-The optimizers that I used in my experiments are the gradient-free optimizers COBYLA and Powell. I also tested the use of the Nelder-Mead optimizer~\cite{Nelder-Mead}.
+The optimizers that I used in my experiments are the gradient-free optimizers COBYLA and Powell. I also tested the use of the Nelder-Mead optimizer~\cite{Nelder-Mead} (which is also a gradient-free optimizer).
 
 \paragraph*{Tolerance Condition}
 Every optimizer has certain halting conditions.
@@ -684,6 +722,7 @@ If we synthesize a circuit that implements this unitary, we can use it to genera
 Thus, for each MUB, I used the BQSkit module to synthesize a circuit that corresponds to the MUB's unitary matrix.
 The synthesized results are written in OpenQASM 2.0.
 These circuits are saved as qasm files in a folder, to be used in the following experiments.
+An interesting question for future work is the matter of synthesis complexity and accuracy (discussed in section \ref{sec:future_work}).
 
 The code for the MUB circuit synthesis is in the notebook ``mub\_generation.ipynb''.
 The MUB circuits can be found under the folder ``mub\_bqskit''.
@@ -785,8 +824,12 @@ There are more experiments to be made, and there are more methods to try to full
 Many experimental choices were made ``Ad-Hoc'' and due to intuition --- perhaps doubling back and trying different hyper-parameter choices could lead to interesting conclusions.
 I will discuss ideas for future work in the following section.
 
-\section{Future Work}
+\section{Future Work} \label{sec:future_work}
 I will now list the ideas for the continuation of this work that I could not implement myself, either due to lack of time or due to lack of specific expertise.
+
+\paragraph*{Synthesis of MUB Generation Circuits}
+In this project, I used the BQSKit package to take the MUB transition matrices and synthesize appropriate quantum circuits for them. However, I did not explore the options for hyper-parameters of the synthesis process, or its guarantee of circuit depth.
+Specifically, there are two interesting questions to consider: What is the accuracy level guaranteed by the synthesis? And, in a related manner, what is the depth of the synthesized circuit? These questions are relevant both in the concrete and in the asymptotic case.
 
 \paragraph*{Concentration of Measure.}
 As mentioned in Section~\ref{sec:mub_use}, the Non-Uniformity of state spaces is connected to the definition of the Haar Measure and to the concentration of measure.
@@ -881,5 +924,57 @@ The statistical data contains the following fields:
     \item `min\_nfev': The minimal nfev from all experiments.
     \item `nfevs': The number of function evals that each optimization experiment had until it halted.
 \end{denseitemize}
+
+
+\section{Generation of MUBs for 2 Qubits} \label{app:mub_table}
+In the 2-qubit case, the possible Pauli strings are:
+\begin{equation}
+    \bigl\{  \sigma_x^2,\; \sigma_y^2,\; \sigma_z^2,\;
+    \sigma_x^1,\; \sigma_x^1\sigma_x^2,\; \sigma_x^1\sigma_y^2,\; \sigma_x^1\sigma_z^2,
+    \sigma_y^1,\; \sigma_y^1\sigma_x^2,\; \sigma_y^1\sigma_y^2,\; \sigma_y^1\sigma_z^2,\; 
+    \sigma_z^1,\; \sigma_z^1\sigma_x^2,\; \sigma_z^1\sigma_y^2,\; \sigma_z^1\sigma_z^2 \bigr\}
+\end{equation}
+
+The following is the partitioning table for the 2-qubit case from Lawrence~\cite{lawrence_mutually_2002}:
+
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|}
+        \hline
+        1 & $(zz)_\pi$  & $\sigma_z^1$           & $\sigma_z^2$           & $\sigma_z^1\sigma_z^2$ \\ \hline
+        2 & $(xy)_\pi$  & $\sigma_x^1$           & $\sigma_y^2$           & $\sigma_x^1\sigma_y^2$ \\ \hline
+        3 & $(yx)_\pi$  & $\sigma_y^1$           & $\sigma_x^2$           & $\sigma_y^1\sigma_x^2$ \\ \hline
+        4 & $(zx)_B$    & $\sigma_y^1\sigma_y^2$ & $\sigma_z^1\sigma_x^2$ & $\sigma_x^1\sigma_z^2$ \\ \hline
+        5 & $(yz)_{Bi}$ & $\sigma_x^1\sigma_x^2$ & $\sigma_y^1\sigma_x^2$ & $\sigma_z^1\sigma_y^2$ \\ \hline
+    \end{tabular}
+\end{table}
+
+Each row represents a specific subset in the partition.
+The first column is the index of the row. The second is the ``name'' of the basis, along with a subscript I will explain later. The three other rows show the Pauli strings in the subset.
+
+Using the canonical commutation relations, it is verifiable that the matrices in each row commute with each other.
+After performing mutual diagonalization, one finds that the mutual eigenbasis for each row is given as the following table:
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|c|}
+        \hline
+        1 & $(zz)_\pi$  & $\bigl\{ \ket{00}, \ket{01}, \ket{10}, \ket{11}\bigr\}$ \\ \hline
+        2 & $(xy)_\pi$  & $\bigl\{ \ket{++_i}, \ket{+-_i}, \ket{-+_i}, \ket{--_i}\bigr\}$ \\ \hline
+        3 & $(yx)_\pi$  & $\bigl\{ \ket{+_i+}, \ket{+_i-}, \ket{-_i+}, \ket{-_i-}\bigr\}$ \\ \hline
+        4 & $(zx)_B$    & $\Bigl\{ \frac{1}{2}\qvect{-1}{1}{1}{1},\: \frac{1}{2}\qvect{1}{-1}{1}{1},\: \frac{1}{2}\qvect{1}{1}{-1}{1},\: \frac{1}{2}\qvect{1}{1}{1}{-1}\Bigr\}$ \\ \hline
+        5 & $(yz)_{Bi}$ & $\Bigl\{ \frac{1}{2}\qvect{1}{i}{i}{1},\: \frac{1}{2}\qvect{1}{-i}{-i}{1},\: \frac{1}{2}\qvect{-1}{-i}{i}{1},\: \frac{1}{2}\qvect{-1}{i}{-i}{1}\Bigr\}$ \\ \hline
+    \end{tabular}
+\end{table}
+
+Note that, for all subsets with the subscript $\pi$, the basis states are \emph{product} states.
+For the fourth subset, with the subscript $B$, the states are maximally entangled (like the \emph{bell} states).
+For the fifth subset, with the subscript $B_i$, the states are maximally entangled, but also contain \emph{imaginary} coefficients.
+
+As described in Section~\ref{subsec:mub_synthesis}, the diagonalization is performed automatically in code.
+After reaching said bases, they are horizontally concatenated to form unitary matrices.
+The matrix of a certain basis act as transition matrices from the computational basis to the wanted basis.
+Finally, a circuit synthesis procedure generates quantum circuits that implement (approximately) the desired unitaries.
 
 \end{document}
