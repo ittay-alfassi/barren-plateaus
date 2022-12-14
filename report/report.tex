@@ -174,7 +174,7 @@ In the form of equation \ref{eqn:general_cost}:
 
 Another cost function, called the local cost function, is defined by 
 
-\begin{equation}
+\begin{equation} \label{eqn:global_vqe_cost}
     C^{\textrm{local}} = 1 - \frac{1}{n} \sum_{j=1}^{n} p_0^{(j)}
 \end{equation}
 
@@ -197,15 +197,16 @@ In the form of equation \ref{eqn:general_cost}:
 
 Concrete examples of the difference between the two cost functions are given in Appendix \ref{app:vqc_cost_example}.
 
-It is proven in~\cite{sharma_noise_2020} that
+It is proven in~\cite{khatri_quantum-assisted_2019} that
 
 \begin{equation}
     C^{\textrm{local}} \leq C^{\textrm{global}} \leq nC^{\textrm{local}}
 \end{equation} 
 
-The semantic meaning of this inequality is that $C^\textrm{global} and C^\textrm{local}$ reach a minimum and converge together.
+The semantic meaning of this inequality is that $C^\textrm{global}$ and $C^\textrm{local}$ reach a minimum and converge together.
 
-However, $C^\textrm{global}$ suffers from a provably vanishing gradient as $n$ increases~\cite{cerezo_cost_2021}, while $C^\textrm{local}$ does not. Thus, we will use $C^\textrm{local}$ in our experiments.
+However, $C^\textrm{global}$ suffers from a barren plateau (discussed in Section \ref{sec:bps}) as $n$ increases~\cite{cerezo_cost_2021}, while $C^\textrm{local}$ does not. Thus, we will use $C^\textrm{local}$ in our experiments.
+Details on the vanishing gradient of $C^\textrm{global}$ can be found in Appendix \ref{app:vqc_global_bp}.
 
 \subsection{Optimizers for Variational Quantum Algorithms} \label{subsec:optimizers}
 Classical optimizers perform the task of finding a (hopefully global) extremum of some scalar function.
@@ -310,6 +311,7 @@ As such, cost functions that use these ansatzes suffer from barren plateaus when
 
 Another paper, by Cerezo et al.~\cite{cerezo_cost_2021}, shows that if the cost function makes use of global operators, barren plateaus will be encountered in \emph{any} circuit depth.
 For this reason, it is preferable to use the local cost function in VQC problems and not the global cost function.
+This property is demonstrated in Appendix \ref{app:vqc_cost_example} and serves as an intuitive example of how Barren Plateaus may appear.
 % A paper by Wang et al.~\cite{wang_noise-induced_2021}
 
 \subsubsection{Barren Plateaus in VQC} \label{subsec:vqc_bp}
@@ -1032,6 +1034,31 @@ As described in Section~\ref{subsec:mub_synthesis}, the diagonalization is perfo
 After reaching said bases, they are horizontally concatenated to form unitary matrices.
 The matrix of a certain basis act as transition matrices from the computational basis to the wanted basis.
 Finally, a circuit synthesis procedure generates quantum circuits that implement (approximately) the desired unitaries.
+
+
+\section{Barren Plateau in VQC with Global Cost} \label{app:vqc_global_bp}
+
+Khatri \cite{khatri_quantum-assisted_2019} shows that for a target unitary $V$ and a parametric circuit $U$, the global cost gradient vanishes exponentially for large $n$.
+
+Consider the following example:
+Let the target unitary $V = V_1 \otimes V_2 \otimes \cdots \otimes V_n$ be composed of $n$ 1-local unitaries.
+Let the parametric unitary $U = U_1 \otimes U_2 \otimes \cdots \otimes U_n$ be composed of $n$ 1-local parametric gates.
+
+From the definition of $C^\textrm{global}$ (\ref{eqn:global_vqe_cost}), we get:
+
+$$ C^{\textrm{global}} = 1 - \left|\bra{\vec{0}}U^\dagger V\ket{\vec{0}}\right|^2 = 1 - \prod_{i=1}^{n} r_j, \quad  r_j = \left| \bra{0} U_j^\dagger V_j \ket{0} \right|^2$$
+
+Assuming a random choice of initial parameters for each $U_j$, the value of $\prod r_j$ will be very small for large $n$.
+Thus, a very large portion of the parameter space will exhibit $C^\textrm{global} \approx 1$.
+Consequently, the gradient of $C^\textrm{global}$ will vanish.
+
+In contrast, the local cost function takes the form:
+$$ C^\textrm{local} = 1 - \frac{1}{n} \sum_{j=1}^{n} r_j$$
+That is, the right term is the average of the error terms and not their product.
+Through the use of an average, the value of the cost function is not suppressed to an exponentially vanishing range of values.
+
+For example, if an average $r_j$ value takes the value of $\frac{1}{2}$, $C^{\textrm{global}}$ will take a value of $1 - \frac{1}{2^n}$, but $C^\textrm{local}$ will have a value of $\frac{1}{2}$.
+
 
 
 \end{document}
